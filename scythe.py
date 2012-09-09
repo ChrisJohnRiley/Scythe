@@ -129,7 +129,7 @@ def extract_module_data(module_dom):
             # filter modules based on selected categories
             if xmlData['category'].lower() in opts.category.lower() or \
                 opts.category.lower() == "all" or \
-                opts.single.lower() in xmlData['name'].lower():
+                (opts.single.lower() and opts.single.lower() in xmlData['name'].lower()):
                 if xmlData['category'].lower() == "example" and \
                     "example" not in opts.category.lower():
                     # skip example module when running with all or default settings
