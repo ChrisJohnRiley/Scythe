@@ -1,0 +1,16 @@
+<module>
+    <site>
+        <name>Wordpress.com</name>
+        <url><![CDATA[https://wordpress.com/wp-login.php]]></url>
+        <method>POST</method>
+        <postParameters><![CDATA[log=<ACCOUNT>&pwd=<RANDOM>&testcookie=1&redirect_to=http%3A%2F%2Fwordpress.com%2F&submit=]]></postParameters>
+        <headers></headers>
+        <requestCookie></requestCookie>
+        <successmatch>The password you entered for the email or username</successmatch>
+        <negativematch>Invalid email or username</negativematch>
+        <date>08/09/2012</date>
+        <version>1</version>
+        <author>CJR</author>
+        <category>blogs</category>
+    </site>
+</module>
