@@ -23,5 +23,20 @@ scythe: account enumerator
     where you do not have permission. Any modules provided are for demonstration purposes
     and may breach end user license agreements if used against a site. Your mileage may
     vary... be responsible!
-    
+
     External module depenancies: colorama (Windows only, optional)
+
+Example Usage:
+==============
+
+> List available modules
+
+    ./scythe.py -l
+
+> Check account list against facebook
+
+    ./scythe.py --single facebook.com --accountfile=accountfile.txt
+
+> Check account list against all modules in the social category (w/ summary output)
+
+    ./scythe.py --category=social --accountfile=accountfile.txt --summary
