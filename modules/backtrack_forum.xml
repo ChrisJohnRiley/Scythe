@@ -5,7 +5,7 @@
         <method>POST</method>
         <postParameters><![CDATA[s=<RANDOM>&securitytoken=guest&do=verifyusername&username=<ACCOUNT>]]></postParameters>
         <headers>Accept-Language: en-gb</headers>
-        <requestCookie>true</requestCookie>
+        <requestCookie></requestCookie>
         <successmatch>That username is already</successmatch>
         <negativematch>Username is valid</negativematch>
         <date>08/09/2012</date>
