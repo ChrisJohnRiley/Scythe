@@ -23,3 +23,5 @@ scythe: account enumerator
     where you do not have permission. Any modules provided are for demonstration purposes
     and may breach end user license agreements if used against a site. Your mileage may
     vary... be responsible!
+    
+    External module depenancies: colorama (Windows only, optional)
