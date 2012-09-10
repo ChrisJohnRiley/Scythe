@@ -27,7 +27,7 @@
     and may breach end user license agreements if used against a site. Your mileage may
     vary... be responsible!
 
-    External module depenancies: none
+    External module depenancies: colorama (Windows only, optional)
 
 """
 
@@ -39,6 +39,7 @@ import string
 import textwrap
 import sys
 import traceback
+import time
 from random import Random
 from optparse import OptionParser, SUPPRESS_HELP
 from array import *
@@ -56,6 +57,8 @@ __status__ = 'Prototype'
 modules = []
 accounts = []
 success = []
+color = {}
+startTime = time.clock()
 
 def logo():
     # because ASCII-art is the future!
@@ -134,15 +137,15 @@ def extract_module_data(module_dom):
                     "example" not in opts.category.lower():
                     # skip example module when running with all or default settings
                     if opts.verbose:
-                        print "\t\t[!] Skipping example module : %s" % xmlData['name']
+                        print "\t\t[" + color['red'] + "!" + color['end'] + "] Skipping example module : %s" % xmlData['name']
                 else:
                     print "\t\t[ ] Extracted module information from %s" % xmlData['name']
                     modules.append(xmlData)
             else:
-                print "\t\t[!] Skipping module %s as it does not match the selected category (%s)" % (xmlData['name'], opts.category)
+                print "\t\t[" + color['red'] + "!" + color['end'] + "] Skipping module %s as it does not match the selected category (%s)" % (xmlData['name'], opts.category)
 
         except Exception, e:
-            print "\t\t[!] Failed to extracted module information\n\t\tError: %s" % e
+            print "\t\t[" + color['red'] + "!" + color['end'] + "] Failed to extracted module information\n\t\tError: %s" % e
             if opts.debug:
                 print traceback.print_exc(file=sys.stdout)
             continue
@@ -224,12 +227,12 @@ def load_modules():
                 path = path + '/'
             # read in modules
             if file.endswith('.xml') and not file.startswith('.'):
-                print '\t\t[ ] Loading module : %s' % file,
+                print "\t\t[ ] Loading module : %s" % file,
                 module_dom = parse(path + file)
                 module_dom = module_dom.getElementsByTagName('site')
                 extract_module_data(module_dom)
             elif opts.verbose:
-                print '\t\t[!] Skipping non XML file : %s' % file
+                print "\t\t[" + color['red'] + "!" + color['end'] + "] Skipping non XML file : %s" % file
 
     if opts.verbose:
         output_modules()  #debug output
@@ -287,7 +290,7 @@ def make_requests(testcases):
         if not progress == 0:
             progress_percentage = int(100 / (float(len(testcases)) / float(progress)))
             if progress_percentage - progress_last > 20: # only update percentage in 20% chunks
-                print '\n\t[-] [%s] %s%% complete\n' % (('#'*(progress_percentage / 10)).ljust(10, "."),progress_percentage)
+                print "\n\t[-] [%s] %s%% complete\n" % ((color['yellow'] + ("#"*(progress_percentage / 10)) + color['end']).ljust(10, "."),progress_percentage)
                 progress_last = progress_percentage
         if test['method'] == 'GET':
             resp = get_request(test)
@@ -295,28 +298,29 @@ def make_requests(testcases):
                 matched = success_check(resp, test['successmatch'])
                 if matched:
                     print "\t----------------------------------------------------------------------------------------------"
-                    print '\t[X] success matched %s on %s' % (test['account'], test['name'])
+                    print "\t[" + color['green'] + "X" + color['end'] + "] success matched %s on %s" \
+                        % (test['account'], test['name'])
                     print "\t----------------------------------------------------------------------------------------------"
                     success.append(test)
             if resp and test['negativematch']:
                 matched = negative_check(resp, test['negativematch'])
                 if matched and opts.verbose:
-                    print '\t[ ] negative matched %s on %s' % (test['account'], test['name'])
+                    print "\t[ ] negative matched %s on %s" % (test['account'], test['name'])
         elif test['method'] == 'POST':
             resp = post_request(test)
             if resp and test['successmatch']:
                 matched = success_check(resp, test['successmatch'])
                 if matched:
                     print "\t----------------------------------------------------------------------------------------------"
-                    print '\t[X] success matched %s on %s' % (test['account'], test['name'])
+                    print "\t[" + color['green'] + "X" + color['end'] + "] success matched %s on %s" % (test['account'], test['name'])
                     print "\t----------------------------------------------------------------------------------------------"
                     success.append(test)
             if resp and test['negativematch']:
                 matched = negative_check(resp, test['negativematch'])
                 if matched and opts.verbose:
-                    print '\t[ ] negative matched %s on %s' % (test['account'], test['name'])
+                    print "\t[ ] negative matched %s on %s" % (test['account'], test['name'])
         else:
-            print "\t[!] Unknown Method %s : %s" % test['method'], test['url']
+            print "\t[" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" % test['method'], test['url']
 
         progress = progress +1 # iterate progress value for the progress bar
 
@@ -337,8 +341,8 @@ def get_request(test):
         f.close()
         return resp
     except Exception,e:
-        print '\t[!] Error contacting %s' % test['url']
-        print '\t[!] Error : %s' % e
+        print "\t[" + color['red'] + "!" + color['end'] + "] Error contacting %s" % test['url']
+        print "\t[" + color['red'] + "!" + color['end'] + "] Error : %s" % e
         if opts.debug:
             print traceback.print_exc(file=sys.stdout)
 
@@ -366,8 +370,8 @@ def post_request(test):
 
         return resp
     except Exception,e:
-        print '\t[!] Error contacting %s' % test['url']
-        print '\t[!] Error : %s' % e
+        print "\t[" + color['red'] + "!" + color['end'] + "] Error contacting %s" % test['url']
+        print "\t[" + color['red'] + "!" + color['end'] + "] Error : %s" % e
         if opts.debug:
             print traceback.print_exc(file=sys.stdout)
 
@@ -393,7 +397,7 @@ def success_check(data, successmatch):
         else:
             return False
     except:
-        print '[!] Invalid in success check. Please check the successcheck parameter'
+        print "[" + color['red'] + "!" + color['end'] + "] Invalid in success check. Please check the successcheck parameter"
         if opts.debug:
             print traceback.print_exc(file=sys.stdout)
 
@@ -407,7 +411,7 @@ def negative_check(data, negativematch):
         else:
             return False
     except:
-        print '[!] Invalid in negative check. Please set the negativecheck parameter'
+        print "[" + color['red'] + "!" + color['end'] + "] Invalid in negative check. Please set the negativecheck parameter"
         if opts.debug:
             print traceback.print_exc(file=sys.stdout)
 
@@ -415,9 +419,10 @@ def signal_handler(signal, frame):
     # handle CTRL + C events
 
         if not len(success) == 0:
-            print "\n[!] Outputting successful findings and closing\n"
+            print "\n[" + color['red'] + "!" + color['end'] + "] Outputting successful findings and closing\n"
+            print "[-] tests stopped after %.2f seconds" % (time.clock() - startTime)
             output_success()
-        print '\n\n[!] Ctrl+C detected... exiting\n'
+        print "\n\n[" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
         os._exit(1)
 
 def query_user(question):
@@ -431,20 +436,21 @@ def query_user(question):
         try:
             choice = raw_input().lower()
         except:
-            print '\n\n[!] Ctrl+C detected... exiting\n'
+            print "\n\n[" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
             sys.exit(0)
         if choice == '':
             return valid["no"]
         elif choice in valid:
             return valid[choice]
         else:
-            print "\t[!] Please respond with 'yes' or 'no'\n"
+            print "\t[" + color['red'] + "!" + color['end'] + "] Please respond with 'yes' or 'no'\n"
 
 def setup():
     # setup options
 
     signal.signal(signal.SIGINT, signal_handler)
 
+    
     # handle command line options
     global opts
     parser = OptionParser(version="%prog version ::: " + __version__, epilog="\n")
@@ -499,6 +505,28 @@ def setup():
         ) # hidden -? handling
     (opts, args) = parser.parse_args()
 
+    # set ansi colors for supported platforms (!= Windows)
+
+    if sys.platform.startswith("win"):
+        try:
+            import colorama
+            colorama.init()
+            color['red'] = colorama.Fore.RED + colorama.Style.BRIGHT
+            color['green'] = colorama.Fore.GREEN + colorama.Style.BRIGHT
+            color['yellow'] = colorama.Fore.YELLOW + colorama.Style.BRIGHT
+            color['end'] = colorama.Fore.RESET + colorama.Style.RESET_ALL
+        except:
+            print "\t[!] Colorama Python module not found, color support disabled"
+            color['red'] = ""
+            color['green'] = ""
+            color['yellow'] = ""
+            color['end'] = ""
+    else:
+        color['red'] = "\033[1;31m"
+        color['green'] = "\033[1;32m"
+        color['yellow'] = "\033[1;33m"
+        color['end'] = "\033[0m"
+
     if opts.single:
         opts.category = "single" # clear category if single module specified
 
@@ -517,7 +545,7 @@ def setup():
         else:
             print "\n",
             parser.print_help()
-            parser.exit(0, "\n\t[!] Please specify arguments\n")
+            parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] +"] Please specify arguments\n")
     display_options()
 
 def display_options():
@@ -547,9 +575,10 @@ def main():
     make_requests(testcases)
 
     # print success matches
+    print "\n\t[-] tests completed in %.2f seconds" % (time.clock() - startTime)
     if len(success) > 0:
         output_success()
     else:
-        sys.exit("\n\t[!] No matches found. Exiting!")
+        sys.exit("\n\t[" + color['red'] + "!" + color['end'] + "] No matches found. Exiting!")
 
 main()
