@@ -46,9 +46,9 @@ from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
 __license__ = 'GPL'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 __codename__ = 'Lazy Lizard'
-__date__ = '09 September 2012'
+__date__ = '10 September 2012'
 __maintainer__ = 'ChrisJohnRiley'
 __email__ = 'contact@c22.cc'
 __status__ = 'Prototype'
@@ -74,7 +74,7 @@ def logo():
 
     # add version, codename and maintainer to logo
     print logo
-    print string.rjust('version: ' + __version__,102)
+    print string.rjust('ver ' + __version__ + ' (' + __codename__ + ')', 102)
     print string.rjust(__maintainer__, 101)
 
 def extract_module_data(module_dom):
@@ -242,7 +242,8 @@ def load_accounts():
     account_read = account_file.readlines()
     account_read = [item.rstrip() for item in account_read]
     for a in account_read:
-        accounts.append(a)
+        if not a.startswith("#"): # ignore comment lines in accountfile
+            accounts.append(a)
 
     if opts.verbose:
         output_accounts()  # debug output
@@ -289,7 +290,7 @@ def make_requests(testcases):
                 print '\n\t[-] [%s] %s%% complete\n' % (('#'*(progress_percentage / 10)).ljust(10, "."),progress_percentage)
                 progress_last = progress_percentage
         if test['method'] == 'GET':
-            resp = get_request()
+            resp = get_request(test)
             if resp and test['successmatch']:
                 matched = success_check(resp, test['successmatch'])
                 if matched:
@@ -423,7 +424,7 @@ def query_user(question):
     # query user for Y/N response
 
     valid = {"yes":True, "y":True, "no":False, "n":False}
-    prompt = " [Y/n] :"
+    prompt = " [y/N] :"
 
     while True:
         print question + prompt,
@@ -433,7 +434,7 @@ def query_user(question):
             print '\n\n[!] Ctrl+C detected... exiting\n'
             sys.exit(0)
         if choice == '':
-            return valid["yes"]
+            return valid["no"]
         elif choice in valid:
             return valid[choice]
         else:
@@ -446,7 +447,7 @@ def setup():
 
     # handle command line options
     global opts
-    parser = OptionParser()
+    parser = OptionParser(version="%prog version ::: " + __version__, epilog="\n")
     parser.add_option(
         "-a", "--accountfile",
         dest="accountfile",
@@ -488,23 +489,35 @@ def setup():
         dest="debug",
         default=False,
         help=SUPPRESS_HELP
-        )
+        ) # hidden debug options --> Traceback output for debugging only
+    parser.add_option(
+        "-?",
+        action="store_true",
+        dest="question",
+        default=False,
+        help=SUPPRESS_HELP
+        ) # hidden -? handling
     (opts, args) = parser.parse_args()
 
     if opts.single:
         opts.category = "single" # clear category if single module specified
 
-    if len(sys.argv) < 2:
+    if opts.question: # print help on -? also
+        parser.print_help()
+        sys.exit(0)
+
+    # attempt to handle situations where no module or account file is specified
+    if (opts.moduledir == './modules' and opts.accountfile == './accountfile.txt' \
+        and len(sys.argv) < 3) or len(sys.argv) < 3:
         print "\t[ ] No command-line options specified"
-        user_input = query_user("\t[?] Use default locations and modules?")
+        user_input = query_user("\t[?] Use default locations and load ALL modules? (dangerous)")
         if user_input:
             # continue using defaults
             print "\t[ ] Continuing using defaults"
         else:
             print "\n",
             parser.print_help()
-            parser.exit(0, "\n\t[!] Incorrect number of arguments\n")
-
+            parser.exit(0, "\n\t[!] Please specify arguments\n")
     display_options()
 
 def display_options():
@@ -515,8 +528,12 @@ def display_options():
             initial_indent='', subsequent_indent='\t\t', width=103)
     print textwrap.fill(("\t[ ] Module Directory :::\t%s" % opts.moduledir),
             initial_indent='', subsequent_indent='\t\t', width=103)
-    print textwrap.fill(("\t[ ] Categories :::\t\t%s" % opts.category),
-            initial_indent='', subsequent_indent='\t\t', width=103)
+    if not opts.single:
+        print textwrap.fill(("\t[ ] Categories :::\t\t%s" % opts.category),
+                initial_indent='', subsequent_indent='\t\t', width=103)
+    else:
+        print textwrap.fill(("\t[ ] Single :::\t\t\t%s" % opts.single),
+                initial_indent='', subsequent_indent='\t\t', width=103)
     print "\t[ ] Verbose :::\t\t\t%s" % opts.verbose
     print "\t----------------------------------------------------------------------------------------------\n"
 

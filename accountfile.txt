@@ -1,2 +1,3 @@
+# one account per line
 exampleuser
 testuser
