@@ -136,13 +136,16 @@ def extract_module_data(module_dom):
                     "example" not in opts.category.lower():
                     # skip example module when running with all or default settings
                     if opts.verbose:
-                        print "\t[" + color['red'] + "!" + color['end'] + "] Skipping example module : %s" % xmlData['name']
+                        print "\t[" + color['red'] + "!" + color['end'] + "] Skipping example module : %s" \
+                            % xmlData['name']
                 else:
-                    print "\t[-] Extracted module information from %s" % xmlData['name']
+                    print "\t[" + color['yellow'] + "-" + color['end'] +"] Extracted module information from %s" \
+                        % xmlData['name']
                     modules.append(xmlData)
             else:
                 if opts.verbose:
-                    print "\t[" + color['red'] + "!" + color['end'] + "] Skipping module %s. Not in category (%s)" % (xmlData['name'], opts.category)
+                    print "\t[" + color['red'] + "!" + color['end'] + "] Skipping module %s. Not in category (%s)" \
+                        % (xmlData['name'], opts.category)
 
         except Exception, e:
             print "\t[" + color['red'] + "!" + color['end'] + "] Failed to extracted module information\n\t\tError: %s" % e
@@ -159,29 +162,29 @@ def output_modules():
     if opts.verbose and not opts.listmodules:
         for mod in modules:
             print textwrap.fill((" NAME: %s" % mod['name']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" URL: %s" % mod['url']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" METHOD: %s" % mod['method']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" HEADERS: %s" % mod['headers']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" POST PARAMETERS: %s" % mod['postParameters']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" REQUEST COOKIE: %s" % mod['requestCookie']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" SUCCESS MATCH: %s" % mod['successmatch']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" NEGATIVE MATCH: %s" % mod['negativematch']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" DATE: %s" % mod['date']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" VERSION: %s" % mod['version']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" AUTHOR: %s" % mod['author']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" CATEGORY: %s" % mod['category']),
-                initial_indent='', subsequent_indent='\t', width=80)
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print " ------------------------------------------------------------------------------"
     else:
         print " ", "| Name |".ljust(35), "| Category |".ljust(26), "| Version |".ljust(8)
@@ -199,7 +202,7 @@ def output_accounts():
     print " ------------------------------------------------------------------------------"
     for a in accounts:
         print textwrap.fill((" Account name: %s" % a),
-            initial_indent='', subsequent_indent='\t', width=80)
+            initial_indent='', subsequent_indent=' -> ', width=80)
     print " ------------------------------------------------------------------------------\n"
 
 def output_success():
@@ -209,29 +212,29 @@ def output_success():
         print "\n ------------------------------------------------------------------------------"
         print string.center(">>>>> Successful matches <<<<<", 80)
         print " ------------------------------------------------------------------------------"
-        print "\n ------------------------------------------------------------------------------"
-        print " ", "| Module |".ljust(35), "| Account |".ljust(28)
-        print " ------------------------------------------------------------------------------"
         s_success = sorted(success, key=lambda k: k['name']) # group by site name
-
-        if not opts.verbose:
+        # print normal summary table on request (--summary)
+        if not opts.verbose and opts.summary:
+            print "\n ------------------------------------------------------------------------------"
+            print " ", "| Module |".ljust(35), "| Account |".ljust(28)
+            print " ------------------------------------------------------------------------------"
             for s in s_success:
                 print "  " + s['name'].ljust(37) + s['account'].ljust(30)
             print " ------------------------------------------------------------------------------\n"
-            return
-        else:
+        # print verbose summary on request (-v --summary)
+        elif opts.verbose and opts.summary:
             for s in s_success:
                 print textwrap.fill((" NAME: %s" % s['name']),
-                    initial_indent='', subsequent_indent='\t', width=80)
+                    initial_indent='', subsequent_indent=' -> ', width=80)
                 print textwrap.fill((" ACCOUNT: %s" % s['account']),
-                    initial_indent='', subsequent_indent='\t', width=80)
+                    initial_indent='', subsequent_indent=' -> ', width=80)
                 print textwrap.fill((" URL: %s" % s['url']),
-                    initial_indent='', subsequent_indent='\t', width=80)
+                    initial_indent='', subsequent_indent=' -> ', width=80)
                 print textwrap.fill((" METHOD: %s" % s['method']),
-                    initial_indent='', subsequent_indent='\t', width=80)
+                    initial_indent='', subsequent_indent=' -> ', width=80)
                 print textwrap.fill((" POST PARAMETERS: %s" % s['postParameters']),
-                    initial_indent='', subsequent_indent='\t', width=80)
-            print " ------------------------------------------------------------------------------"
+                    initial_indent='', subsequent_indent=' -> ', width=80)
+                print " ------------------------------------------------------------------------------"
     else:
         print " ------------------------------------------------------------------------------\n"
 
@@ -243,7 +246,7 @@ def load_modules():
         for d in dirs:
            if d.startswith("."): # ignore hidden . dirctories
                dirs.remove(d)
-        print " [-] Starting to load modules from %s\n" % path
+        print " [" + color['yellow'] + "-" + color['end'] +"] Starting to load modules from %s\n" % path
         for file in files:
             if not path.endswith('/'):
                 path = path + '/'
@@ -304,7 +307,7 @@ def make_requests(testcases):
     print "\n ------------------------------------------------------------------------------"
     print string.center(">>>>> Testcases <<<<<", 80)
     print " ------------------------------------------------------------------------------"
-    print " [-] Starting testcases (%d in total)\n" % len(testcases)
+    print " [" + color['yellow'] + "-" + color['end'] +"] Starting testcases (%d in total)\n" % len(testcases)
     progress = 0 # initiate progress count
     progress_last = 0
 
@@ -313,7 +316,9 @@ def make_requests(testcases):
             if not progress == 0:
                 progress_percentage = int(100 / (float(len(testcases)) / float(progress)))
                 if progress_percentage - progress_last > 20: # only update percentage in 20% chunks
-                    print " [-] [%s] %s%% complete\n" % ((color['yellow'] + ("#"*(progress_percentage / 10)) + color['end']).ljust(10, "."),progress_percentage),
+                    print " [" + color['yellow'] + "-" + color['end'] +"] [%s] %s%% complete\n" \
+                        % ((color['yellow'] + ("#"*(progress_percentage / 10)) + \
+                        color['end']).ljust(10, "."),progress_percentage),
                     progress_last = progress_percentage
         if test['method'] == 'GET':
             resp = get_request(test)
@@ -326,7 +331,8 @@ def make_requests(testcases):
             if resp and test['negativematch']:
                 matched = negative_check(resp, test['negativematch'])
                 if matched and opts.verbose:
-                    print " [ ] Negative matched %s on %s" % (test['account'], test['name'])
+                    print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
+                        % (test['account'], test['name'])
         elif test['method'] == 'POST':
             resp = post_request(test)
             if resp and test['successmatch']:
@@ -338,17 +344,20 @@ def make_requests(testcases):
             if resp and test['negativematch']:
                 matched = negative_check(resp, test['negativematch'])
                 if matched and opts.verbose:
-                    print " [ ] Negative matched %s on %s" % (test['account'], test['name'])
+                    print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
+                        % (test['account'], test['name'])
         else:
-            print "[" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" % test['method'], test['url']
+            print "[" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" \
+                % test['method'], test['url']
 
         progress = progress +1 # iterate progress value for the progress bar
 
 def get_request(test):
     # perform GET request
 
-    if opts.verbose:
-        print " [ ] URL (GET): %s" % test['url']
+    if opts.debug:
+        print textwrap.fill((" [ ] URL (GET): %s" % test['url']),
+            initial_indent='', subsequent_indent=' -> ', width=80)
     try:
         user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
         req_headers = { 'User-Agent' : user_agent }
@@ -369,11 +378,11 @@ def get_request(test):
 def post_request(test):
     # perform POST request
 
-    if opts.verbose:
+    if opts.debug:
         print textwrap.fill((" [ ] URL (POST): %s" % test['url']),
-            initial_indent='', subsequent_indent='\t', width=80)
+            initial_indent='', subsequent_indent=' -> ', width=80)
         print textwrap.fill((" [ ] POST PARAMETERS: %s" % test['postParameters']),
-            initial_indent='', subsequent_indent='\t', width=80)
+            initial_indent='', subsequent_indent=' -> ', width=80)
     try:
         user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
         req_headers = { 'User-Agent' : user_agent }
@@ -440,9 +449,10 @@ def signal_handler(signal, frame):
 
         if not len(success) == 0:
             print "\n[" + color['red'] + "!" + color['end'] + "] Outputting successful findings and closing\n"
-            print "[-] tests stopped after %.2f seconds" % (time.clock() - startTime)
+            print "[" + color['yellow'] + "-" + color['end'] +"] tests stopped after %.2f seconds" \
+                % (time.clock() - startTime)
             output_success()
-        print "\n\n[" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
+        print "\n\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
         os._exit(1)
 
 def query_user(question):
@@ -456,7 +466,7 @@ def query_user(question):
         try:
             choice = raw_input().lower()
         except:
-            print "\n\n[" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
+            print "\n\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
             sys.exit(0)
         if choice == '':
             return valid["no"]
@@ -466,82 +476,21 @@ def query_user(question):
             print "\t[" + color['red'] + "!" + color['end'] + "] Please respond with 'yes' or 'no'\n"
 
 def setup():
-    # setup options
+    # setup options and handle ctrl+c events
 
     signal.signal(signal.SIGINT, signal_handler)
+    setup_opts()
 
-
-    # handle command line options
-    global opts
-    parser = OptionParser(version="%prog version ::: " + __version__, epilog="\n")
-    parser.add_option(
-        "-a", "--accountfile",
-        dest="accountfile",
-        default="./accountfile.txt",
-        help="Location of the accounts FILE - 1 account per line",
-        metavar="FILE"
-        )
-    parser.add_option(
-        "-m", "--moduledir",
-        dest="moduledir",
-        default="./modules/",
-        help="Location of the modules directory",
-        metavar="STRING"
-        )
-    parser.add_option(
-        "-l", "--list",
-        action="store_true",
-        dest="listmodules",
-        default=False,
-        help="List modules w/name and category",
-        )
-    parser.add_option(
-        "-c", "--category",
-        dest="category",
-        default="all",
-        help="Restrict modules based on category (comma seperated)",
-        metavar="STRING"
-        )
-    parser.add_option(
-        "-s", "--single",
-        dest="single",
-        default="",
-        help="Restrict to specific module name (name from XML)",
-        metavar="STRING"
-        )
-    parser.add_option(
-        "--summary",
-        action="store_true",
-        dest="summary",
-        default=False,
-        help="Show detailed summary at the end",
-        )
-    parser.add_option(
-        "-v", "--verbose",
-        action="store_true",
-        dest="verbose",
-        default=False,
-        help="Print verbose messages to stdout (-d for debug output)"
-        )
-    parser.add_option(
-        "-d", "--debug",
-        action="store_true",
-        dest="debug",
-        default=False,
-        help=SUPPRESS_HELP
-        ) # hidden debug options --> Traceback output for debugging only
-    parser.add_option(
-        "-?",
-        action="store_true",
-        dest="question",
-        default=False,
-        help=SUPPRESS_HELP
-        ) # hidden -? handling
-    (opts, args) = parser.parse_args()
-
-    # set verbose on debug
-    if opts.debug:
+    # set verbosity level (-v verbose, -v -v verbose and debug)
+    if not opts.verbose:
+        opts.verbose = False
+        opts.debug = False
+    elif opts.verbose == 1:
         opts.verbose = True
+        opts.debug = False
+    else:
+        opts.verbose = True
+        opts.debug = True
 
     # set ansi colors for supported platforms (!= Windows)
     if sys.platform.startswith("win"):
@@ -572,10 +521,13 @@ def setup():
         sys.exit(0)
 
     # attempt to handle situations where no module or account file is specified
+    # skip section if module output is selected
     if (opts.moduledir == './modules' and opts.accountfile == './accountfile.txt' \
-        and len(sys.argv) < 3) or len(sys.argv) < 3:
+        and not opts.listmodules and len(sys.argv) < 3) or \
+        (not opts.listmodules and len(sys.argv) < 3):
         print "\t[ ] No command-line options specified"
-        user_input = query_user("\t[?] Use default locations and load ALL modules? (dangerous)")
+        user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+            +"] Use default locations and load ALL modules? (dangerous)")
         if user_input:
             # continue using defaults
             print "\t[ ] Continuing using defaults"
@@ -585,21 +537,83 @@ def setup():
             parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] +"] Please specify arguments\n")
     display_options()
 
+def setup_opts():
+    # handle command line options
+
+    global opts
+    parser = OptionParser(version="%prog version ::: " + __version__, epilog="\n")
+    parser.add_option(
+        "-a", "--accountfile",
+        dest="accountfile",
+        default="./accountfile.txt",
+        help="Location of the accounts FILE - 1 account per line",
+        metavar="FILE"
+        )
+    parser.add_option(
+        "-m", "--moduledir",
+        dest="moduledir",
+        default="./modules/",
+        help="Location of the modules directory",
+        metavar="STRING"
+        )
+    parser.add_option(
+        "-l", "--list",
+        action="store_true",
+        dest="listmodules",
+        default=False,
+        help="List module names and categories",
+        )
+    parser.add_option(
+        "-c", "--category",
+        dest="category",
+        default="all",
+        help="Restrict modules based on category (comma seperated)",
+        metavar="STRING"
+        )
+    parser.add_option(
+        "-s", "--single",
+        dest="single",
+        default="",
+        help="Restrict to specific module name (name from XML)",
+        metavar="STRING"
+        )
+    parser.add_option(
+        "--summary",
+        action="store_true",
+        dest="summary",
+        default=False,
+        help="Show detailed summary at the end",
+        )
+    parser.add_option(
+        "-v", "--verbose",
+        action="count",
+        dest="verbose",
+        help="Print verbose messages to stdout (-v -v for debug output)"
+        )
+    parser.add_option(
+        "-?",
+        action="store_true",
+        dest="question",
+        default=False,
+        help=SUPPRESS_HELP
+        ) # hidden -? handling
+    (opts, args) = parser.parse_args()
+
 def display_options():
     # print out the options being used
 
     print "\n ------------------------------------------------------------------------------"
-    print textwrap.fill(("\t[ ] Account File :::\t\t%s" % opts.accountfile),
-            initial_indent='', subsequent_indent='\t\t', width=80)
-    print textwrap.fill(("\t[ ] Module Directory :::\t%s" % opts.moduledir),
-            initial_indent='', subsequent_indent='\t\t', width=80)
+    print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Account File :::\t\t%s" \
+        % opts.accountfile), initial_indent='', subsequent_indent='\t\t', width=80)
+    print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Module Directory :::\t%s" \
+        % opts.moduledir), initial_indent='', subsequent_indent='\t\t', width=80)
     if not opts.single:
-        print textwrap.fill(("\t[ ] Categories :::\t\t%s" % opts.category),
-                initial_indent='', subsequent_indent='\t\t', width=80)
+        print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Categories :::\t\t%s" \
+            % opts.category), initial_indent='', subsequent_indent='\t\t', width=80)
     else:
-        print textwrap.fill(("\t[ ] Single Module :::\t\t%s" % opts.single),
-                initial_indent='', subsequent_indent='\t\t', width=80)
-    print "\t[ ] Verbose :::\t\t\t%s" % opts.verbose
+        print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Single Module :::\t\t%s" \
+            % opts.single), initial_indent='', subsequent_indent='\t\t', width=80)
+    print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::\t\t\t%s" % opts.verbose
     print " ------------------------------------------------------------------------------\n"
 
 
@@ -612,7 +626,8 @@ def main():
     make_requests(testcases)
 
     # print success matches
-    print "\n [-] tests completed in %.2f seconds" % (time.clock() - startTime)
+    print "\n [" + color['yellow'] + "-" + color['end'] +"] tests completed in %.2f seconds" \
+        % (time.clock() - startTime)
     if len(success) > 0:
         output_success()
     else:
