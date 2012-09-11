@@ -47,12 +47,12 @@ from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
 __license__ = 'GPL'
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 __codename__ = 'Lazy Lizard'
-__date__ = '10 September 2012'
+__date__ = '11 September 2012'
 __maintainer__ = 'ChrisJohnRiley'
 __email__ = 'contact@c22.cc'
-__status__ = 'Prototype'
+__status__ = 'Beta'
 
 modules = []
 accounts = []
