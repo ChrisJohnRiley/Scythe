@@ -332,23 +332,26 @@ def load_modules():
     if opts.verbose or opts.listmodules:
         output_modules()  #debug and module output
 
-def load_accounts(acct=None):
+def load_accounts():
     # if account is passed in we use that, otherwise
     # load accounts from accountfile
     # one account per line
 
-    if (acct):
-      if opts.verbose:
-        print "using command line supplied user: %s" % acct
+    if opts.account:
+    # load account from command line
+        if opts.verbose:
+            print " [" + color['yellow'] + "-" + color['end'] \
+                + "] using command line supplied user : %s" % opts.account
+        accounts.append(opts.account)
 
-      accounts.append(acct)
     else:
-      account_file = open(opts.accountfile, 'r')
-      account_read = account_file.readlines()
-      account_read = [item.rstrip() for item in account_read]
-      for a in account_read:
-          if not a.startswith("#"): # ignore comment lines in accountfile
-              accounts.append(a)
+    # load accounts from file
+        account_file = open(opts.accountfile, 'r')
+        account_read = account_file.readlines()
+        account_read = [item.rstrip() for item in account_read]
+        for a in account_read:
+            if not a.startswith("#"): # ignore comment lines in accountfile
+                accounts.append(a)
 
     if opts.verbose:
         output_accounts()  # debug output
@@ -507,6 +510,7 @@ def post_request(test):
                 initial_indent='', subsequent_indent=' -> ', width=80)
 
         req = urllib2.Request(test['url'], test['postParameters'], req_headers)
+        f = urllib2.urlopen(req)
         resp = f.read()
         f.close()
 
@@ -771,8 +775,12 @@ def display_options():
     # print out the options being used
 
     print "\n ------------------------------------------------------------------------------"
-    print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Account File :::\t\t%s" \
-        % opts.accountfile), initial_indent='', subsequent_indent='\t\t', width=80)
+    if not opts.account:
+        print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Account File :::\t\t%s" \
+            % opts.accountfile), initial_indent='', subsequent_indent='\t\t', width=80)
+    else:
+        print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Single Account :::\t%s" \
+            % opts.account), initial_indent='', subsequent_indent='\t\t', width=80)
     print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Module Directory :::\t%s" \
         % opts.moduledir), initial_indent='', subsequent_indent='\t\t', width=80)
     if not opts.single:
@@ -789,7 +797,7 @@ def main():
     logo()
     setup()
     load_modules()
-    load_accounts(opts.account)
+    load_accounts()
     testcases = create_testcases()
     make_requests(testcases)
 
