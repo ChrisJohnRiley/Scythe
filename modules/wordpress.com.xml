@@ -6,11 +6,12 @@
         <method>POST</method>
         <postParameters><![CDATA[log=<ACCOUNT>&pwd=<RANDOM>&testcookie=1&redirect_to=http%3A%2F%2Fwordpress.com%2F&submit=]]></postParameters>
         <headers></headers>
-        <requestCookie></requestCookie>
+        <requestCookie>False</requestCookie>
+        <requestCSRF>False</requestCSRF>
         <successmatch>The password you entered for the email or username</successmatch>
         <negativematch>Invalid email or username</negativematch>
-        <date>08/09/2012</date>
-        <version>1</version>
+        <date>13/09/2012</date>
+        <version>2</version>
         <author>CJR</author>
         <category>blogs</category>
     </site>

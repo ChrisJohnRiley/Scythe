@@ -6,11 +6,12 @@
         <method>POST</method>
         <postParameters><![CDATA[email=<ACCOUNT>]]></postParameters>
         <headers>Accept-Language: en-gb,X-Requested-With: XMLHttpRequest</headers>
-        <requestCookie></requestCookie>
+        <requestCookie>False</requestCookie>
+        <requestCSRF>False</requestCSRF>
         <successmatch>already registered</successmatch>
         <negativematch></negativematch>
-        <date>10/09/2012</date>
-        <version>1</version>
+        <date>13/09/2012</date>
+        <version>2</version>
         <author>CJR</author>
         <category>social</category>
     </site>

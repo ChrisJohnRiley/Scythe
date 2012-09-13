@@ -34,7 +34,7 @@
 import os
 import re
 import signal
-import urllib2
+import urllib, urllib2
 import string
 import textwrap
 import sys
@@ -87,46 +87,103 @@ def extract_module_data(module_dom):
     for each in module_dom:
         try:
             xmlData = {}
-            xmlData['name'] = each.getElementsByTagName('name')[0].firstChild.nodeValue
+
+            # try/except blocks to handle badly formed XML modules
+            try:
+                xmlData['name'] = each.getElementsByTagName('name')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
+                xmlData['name'] = 'unspecified'
+
             # set URL - prepend http:// if not present in string
             if not each.getElementsByTagName('url')[0].firstChild.nodeValue.startswith('http'):
                 xmlData['url'] = 'http://' + each.getElementsByTagName('url')[0].firstChild.nodeValue
             else:
                 xmlData['url'] = each.getElementsByTagName('url')[0].firstChild.nodeValue
-            xmlData['method'] = each.getElementsByTagName('method')[0].firstChild.nodeValue
+
+            # set Method
+            try:
+                xmlData['method'] = each.getElementsByTagName('method')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
+                # default to GET if not specified
+                xmlData['method'] = 'GET' 
+
             # set POST Parameters if set in the module XML
-            if each.getElementsByTagName('postParameters')[0].firstChild:
-                xmlData['postParameters'] = each.getElementsByTagName('postParameters')[0].firstChild.nodeValue
-            else:
+            try:
+                if each.getElementsByTagName('postParameters')[0].firstChild.nodeValue.lower() == 'false':
+                    # handle instances where people enter False insterad of leaving this field blank
+                    xmlData['postParameters'] = ''
+                else:
+                    xmlData['postParameters'] = each.getElementsByTagName('postParameters')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
                 xmlData['postParameters'] = ''
+
             # set headers if set in the module XML
-            if each.getElementsByTagName('headers')[0].firstChild:
-                xmlData['headers'] = each.getElementsByTagName('headers')[0].firstChild.nodeValue.split(",")
-            else:
+            try:
+                if each.getElementsByTagName('headers')[0].firstChild.nodeValue.lower() == 'false':
+                    # handle instances where people enter False insterad of leaving this field blank
+                    xmlData['headers'] = ''
+                else:
+                    xmlData['headers'] = each.getElementsByTagName('headers')[0].firstChild.nodeValue.split(",")
+            except (IndexError, AttributeError):
                 xmlData['headers'] = ''
+
             # set request cookie if set in the module XML
-            if each.getElementsByTagName('requestCookie')[0].firstChild:
-                xmlData['requestCookie'] = each.getElementsByTagName('requestCookie')[0].firstChild.nodeValue
-            else:
-                xmlData['requestCookie'] = ''
+            try:
+                if each.getElementsByTagName('requestCookie')[0].firstChild.nodeValue.lower() == 'true':
+                    xmlData['requestCookie'] = True
+                else:
+                    xmlData['requestCookie'] = False
+            except (IndexError, AttributeError):
+                xmlData['requestCookie'] = False
+
+            # set csrf mode if set in the module XML
+            try:
+                if each.getElementsByTagName('requestCSRF')[0].firstChild.nodeValue.lower() == 'false':
+                    xmlData['requestCSRF'] = False
+                else:
+                    xmlData['requestCSRF'] = each.getElementsByTagName('requestCSRF')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
+                xmlData['requestCSRF'] = False
+
             # set success match if specified in the module XML
-            if each.getElementsByTagName('successmatch')[0].firstChild:
+            try:
                 xmlData['successmatch'] = each.getElementsByTagName('successmatch')[0].firstChild.nodeValue
-            else:
+            except (IndexError, AttributeError):
                 xmlData['successmatch'] = ''
+
             # set negative match if specified in the module XML
-            if each.getElementsByTagName('negativematch')[0].firstChild:
-                xmlData['negativematch'] = each.getElementsByTagName('negativematch')[0].firstChild.nodeValue
-            else:
+            try:
+                # handle instances where people enter False insterad of leaving this field blank
+                if each.getElementsByTagName('negativematch')[0].lower() == 'false':
+                    xmlData['negativematch'] = ''
+                else:
+                    xmlData['negativematch'] = each.getElementsByTagName('negativematch')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
                 xmlData['negativematch'] = ''
-            xmlData['date'] = each.getElementsByTagName('date')[0].firstChild.nodeValue
+
+            # set module date
+            try:
+                xmlData['date'] = each.getElementsByTagName('date')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
+                xmlData['date'] =  'unspecified'
+
             # set module version if specified in the module XML
-            if each.getElementsByTagName('version')[0].firstChild:
+            try:
                 xmlData['version'] = each.getElementsByTagName('version')[0].firstChild.nodeValue
-            else:
-                xmlData['version'] = ''
-            xmlData['author'] = each.getElementsByTagName('author')[0].firstChild.nodeValue
-            xmlData['category'] = each.getElementsByTagName('category')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
+                xmlData['version'] = 'unspecified'
+
+            # set module author
+            try:
+                xmlData['author'] = each.getElementsByTagName('author')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
+                xmlData['author'] = 'unlisted'
+
+            # set category
+            try:
+                xmlData['category'] = each.getElementsByTagName('category')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
+                xmlData['category'] = 'unspecified'
 
             # filter modules based on selected categories
             if xmlData['category'].lower() in opts.category.lower() or \
@@ -173,6 +230,8 @@ def output_modules():
                 initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" REQUEST COOKIE: %s" % mod['requestCookie']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
+            print textwrap.fill((" REQUEST CSRF TOKEN: %s" % mod['requestCSRF']),
+                initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" SUCCESS MATCH: %s" % mod['successmatch']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" NEGATIVE MATCH: %s" % mod['negativematch']),
@@ -192,6 +251,7 @@ def output_modules():
         for mod in modules:
             print "  " + mod['name'].ljust(37) + mod['category'].ljust(30) + mod['version'].ljust(10)
         print " ------------------------------------------------------------------------------\n"
+        # exit after providing module list
         sys.exit(0)
 
 def output_accounts():
@@ -224,16 +284,16 @@ def output_success():
         # print verbose summary on request (-v --summary)
         elif opts.verbose and opts.summary:
             for s in s_success:
-                print textwrap.fill((" NAME: %s" % s['name']),
-                    initial_indent='', subsequent_indent=' -> ', width=80)
-                print textwrap.fill((" ACCOUNT: %s" % s['account']),
-                    initial_indent='', subsequent_indent=' -> ', width=80)
-                print textwrap.fill((" URL: %s" % s['url']),
-                    initial_indent='', subsequent_indent=' -> ', width=80)
-                print textwrap.fill((" METHOD: %s" % s['method']),
-                    initial_indent='', subsequent_indent=' -> ', width=80)
-                print textwrap.fill((" POST PARAMETERS: %s" % s['postParameters']),
-                    initial_indent='', subsequent_indent=' -> ', width=80)
+                print textwrap.fill((" NAME: \t\t\t%s" % s['name']),
+                    initial_indent='', subsequent_indent='\t -> ', width=80)
+                print textwrap.fill((" ACCOUNT: \t\t%s" % s['account']),
+                    initial_indent='', subsequent_indent='\t -> ', width=80)
+                print textwrap.fill((" URL: \t\t\t%s" % s['url']),
+                    initial_indent='', subsequent_indent='\t -> ', width=80)
+                print textwrap.fill((" METHOD: \t\t%s" % s['method']),
+                    initial_indent='', subsequent_indent='\t -> ', width=80)
+                print textwrap.fill((" POST PARAMETERS: \t%s" % s['postParameters']),
+                    initial_indent='', subsequent_indent='\t -> ', width=80)
                 print " ------------------------------------------------------------------------------"
     else:
         print " ------------------------------------------------------------------------------\n"
@@ -294,6 +354,7 @@ def create_testcases():
             tempcase['postParameters'] = m['postParameters'].replace("<ACCOUNT>", a).replace("<RANDOM>", rand)
             tempcase['headers'] = m['headers']
             tempcase['requestCookie'] = m['requestCookie']
+            tempcase['requestCSRF'] = m['requestCSRF']
             tempcase['successmatch'] = m['successmatch']
             tempcase['negativematch'] = m['negativematch']
             testcases.append(tempcase)
@@ -321,7 +382,7 @@ def make_requests(testcases):
                         color['end']).ljust(10, "."),progress_percentage),
                     progress_last = progress_percentage
         if test['method'] == 'GET':
-            resp = get_request(test)
+            test, resp = get_request(test)
             if resp and test['successmatch']:
                 matched = success_check(resp, test['successmatch'])
                 if matched:
@@ -334,7 +395,7 @@ def make_requests(testcases):
                     print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
                         % (test['account'], test['name'])
         elif test['method'] == 'POST':
-            resp = post_request(test)
+            test, resp = post_request(test)
             if resp and test['successmatch']:
                 matched = success_check(resp, test['successmatch'])
                 if matched:
@@ -355,20 +416,34 @@ def make_requests(testcases):
 def get_request(test):
     # perform GET request
 
-    if opts.debug:
-        print textwrap.fill((" [ ] URL (GET): %s" % test['url']),
-            initial_indent='', subsequent_indent=' -> ', width=80)
+    urllib.urlcleanup() # clear cache
+
     try:
         user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
         req_headers = { 'User-Agent' : user_agent }
         for each in test['headers']:
             key, val = each.split(":", 1)
             req_headers[key] = val
+        if test['requestCookie'] or test['requestCSRF']:
+            # request cookie and csrf token if set in module XML
+            cookie_val, csrf_val = request_value(test)
+            if cookie_val:
+                req_headers['cookie'] = cookie_val
+            if csrf_val:
+                # replace <CSRFTOKEN> with the collected token
+                test['url'] = test['url'].replace("<CSRFTOKEN>", csrf_val)
+                test['postParameters'] = test['postParameters'].replace("<CSRFTOKEN>", csrf_val)
+        if opts.debug:
+            # print debug output
+            print textwrap.fill((" [ ] URL (GET): %s" % test['url']),
+                initial_indent='', subsequent_indent=' -> ', width=80)
+
         req = urllib2.Request(test['url'], '',req_headers)
         f = urllib2.urlopen(req)
         resp = f.read()
         f.close()
-        return resp
+
+        return test, resp
     except Exception,e:
         print "\t[" + color['red'] + "!" + color['end'] + "] Error contacting %s" % test['url']
         print "\t[" + color['red'] + "!" + color['end'] + "] Error : %s" % e
@@ -378,43 +453,82 @@ def get_request(test):
 def post_request(test):
     # perform POST request
 
-    if opts.debug:
-        print textwrap.fill((" [ ] URL (POST): %s" % test['url']),
-            initial_indent='', subsequent_indent=' -> ', width=80)
-        print textwrap.fill((" [ ] POST PARAMETERS: %s" % test['postParameters']),
-            initial_indent='', subsequent_indent=' -> ', width=80)
+    urllib.urlcleanup() # clear cache
+
     try:
         user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
         req_headers = { 'User-Agent' : user_agent }
-        for each in test['headers']:
-            key, val = each.split(":", 1)
-            req_headers[key] = val
-        if test['requestCookie']:
-            cookie_val = request_cookie(test)
-            req_headers['cookie'] = cookie_val
+        if test['headers']:
+            for each in test['headers']:
+                key, val = each.split(":", 1)
+                req_headers[key] = val
+        if test['requestCookie'] or test['requestCSRF']:
+            # request cookie and csrf token if set in module XML
+            cookie_val, csrf_val = request_value(test)
+            if cookie_val:
+                req_headers['cookie'] = cookie_val
+            if csrf_val:
+                # replace <CSRFTOKEN> with the collected token
+                test['url'] = test['url'].replace("<CSRFTOKEN>", csrf_val)
+                test['postParameters'] = test['postParameters'].replace("<CSRFTOKEN>", csrf_val)
+        
+        if opts.debug:
+            # print debug output
+            print textwrap.fill((" [ ] URL (POST): %s" % test['url']),
+                initial_indent='', subsequent_indent=' -> ', width=80)
+            print textwrap.fill((" [ ] POST PARAMETERS: %s" % test['postParameters']),
+                initial_indent='', subsequent_indent=' -> ', width=80)
+
         req = urllib2.Request(test['url'], test['postParameters'], req_headers)
         f = urllib2.urlopen(req)
         resp = f.read()
         f.close()
 
-        return resp
+        return test, resp
     except Exception,e:
         print "\t[" + color['red'] + "!" + color['end'] + "] Error contacting %s" % test['url']
         print "\t[" + color['red'] + "!" + color['end'] + "] Error : %s" % e
         if opts.debug:
             print traceback.print_exc(file=sys.stdout)
 
-def request_cookie(test):
-    # request a cookie from the target site for use during the logon attempt
+def request_value(test):
+    # request a cookie or CSRF token from the target site for use during the logon attempt
 
+    urllib.urlcleanup() # clear cache
     user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
     req_headers = { 'User-Agent' : user_agent }
     url = test['url'].split("&", 1)[0] # strip parameters from url where present
-    req_cookie = urllib2.Request(url, '', req_headers)
-    resp_cookie = urllib2.urlopen(req_cookie)
-    cookie = resp_cookie.info().getheader('Set-Cookie') # grab cookies
+    req_val = urllib2.Request(url, '', req_headers)
+    response = urllib2.urlopen(req_val)
+    
+    # capture Set-Cookie
+    if test['requestCookie']:
+        if response.info().getheader('Set-Cookie'):
+            cookie_val = response.info().getheader('Set-Cookie') # grab cookies
+        else:
+            cookie_val = False
+            print "[" + color['red'] + "!" + color['end'] + "] Set-Cookie Error: No valid Set-Cookie response received"
+    else:
+        cookie_val = False
+    
+    # capture CSRF token (using regex from module XML)
+    if test['requestCSRF']:
+        try:
+            csrf_regex = re.compile(test['requestCSRF'])
+            match = re.search(csrf_regex, response.read())
+            if match:
+                csrf_val = match.group(1)
+            else:
+                csrf_val = False
+                print "[" + color['red'] + "!" + color['end'] + "] Invalid CSRF regex. Please check parameters"
+        except:
+            print "[" + color['red'] + "!" + color['end'] + "] Invalid CSRF regex. Please check parameters"
+            if opts.debug:
+                print traceback.print_exc(file=sys.stdout)
+    else:
+        csrf_val = False
 
-    return cookie
+    return cookie_val, csrf_val
 
 def success_check(data, successmatch):
     # checks response data against successmatch regex
