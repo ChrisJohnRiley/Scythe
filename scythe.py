@@ -34,7 +34,8 @@
 import os
 import re
 import signal
-import urllib, urllib2
+import urllib
+import urllib2
 import string
 import textwrap
 import sys
@@ -80,7 +81,7 @@ def logo():
     print string.rjust('ver ' + __version__ + ' (' + __codename__ + ')', 74)
     print string.rjust(__maintainer__, 73)
 
-def extract_module_data(module_dom):
+def extract_module_data(file, module_dom):
     # extract module information from the provided dom
 
     print "\n",
@@ -105,7 +106,7 @@ def extract_module_data(module_dom):
                 xmlData['method'] = each.getElementsByTagName('method')[0].firstChild.nodeValue
             except (IndexError, AttributeError):
                 # default to GET if not specified
-                xmlData['method'] = 'GET' 
+                xmlData['method'] = 'GET'
 
             # set POST Parameters if set in the module XML
             try:
@@ -193,7 +194,8 @@ def extract_module_data(module_dom):
             # filter modules based on selected categories
             if xmlData['category'].lower() in opts.category.lower() or \
                 opts.category.lower() == "all" or \
-                (opts.single.lower() and opts.single.lower() in xmlData['name'].lower()):
+                (opts.single.lower() and opts.single.lower() in xmlData['name'].lower()) or \
+                (file.lower() in opts.single.lower()):
                 if xmlData['category'].lower() == "example" and \
                     "example" not in opts.category.lower():
                     # skip example module when running with all or default settings
@@ -324,7 +326,7 @@ def load_modules():
                 print "\t[ ] Checking module : %s" % file,
                 module_dom = parse(path + file)
                 module_dom = module_dom.getElementsByTagName('site')
-                extract_module_data(module_dom)
+                extract_module_data(file, module_dom)
             elif opts.verbose:
                 print "\t[" + color['red'] + "!" + color['end'] \
                     + "] Skipping non-XML file : %s" % file
@@ -359,9 +361,9 @@ def load_accounts():
 def create_testcases():
     # create a list of testcases from accounts and modules
     #
-    # replace functions are in place to replace <ACCOUNT> 
+    # replace functions are in place to replace <ACCOUNT>
     #  with the account names presented
-    # the script will also replace any instances of <RANDOM> 
+    # the script will also replace any instances of <RANDOM>
     #  with a random string (8) to avoid detection
 
     testcases = []
@@ -396,6 +398,7 @@ def make_requests(testcases):
     progress_last = 0
 
     for test in testcases:
+        # progressbar
         if len(testcases) > 50: # only show progress on tests of > 50
             if not progress == 0:
                 progress_percentage = int(100 / (float(len(testcases)) / float(progress)))
@@ -404,6 +407,8 @@ def make_requests(testcases):
                         % ((color['yellow'] + ("#"*(progress_percentage / 10)) + \
                         color['end']).ljust(10, "."),progress_percentage),
                     progress_last = progress_percentage
+
+        # GET method worker
         if test['method'] == 'GET':
             test, resp = get_request(test)
             if resp and test['successmatch']:
@@ -412,11 +417,17 @@ def make_requests(testcases):
                     print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
                         % (test['account'], test['name'])
                     success.append(test)
+                    if opts.outputfile:
+                        # log to outputfile
+                        opts.outputfile.write("Account " + test['account'] + " exists on " \
+                            + test['name'] +"\n")
             if resp and test['negativematch']:
                 matched = negative_check(resp, test['negativematch'])
                 if matched and opts.verbose:
                     print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
                         % (test['account'], test['name'])
+
+        # POST method worker
         elif test['method'] == 'POST':
             test, resp = post_request(test)
             if resp and test['successmatch']:
@@ -425,6 +436,10 @@ def make_requests(testcases):
                     print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
                         % (test['account'], test['name'])
                     success.append(test)
+                    if opts.outputfile:
+                        # log to outputfile
+                        opts.outputfile.write("Account " + test['account'] + " exists on " \
+                            + test['name'] +"\n")
             if resp and test['negativematch']:
                 matched = negative_check(resp, test['negativematch'])
                 if matched and opts.verbose:
@@ -470,7 +485,7 @@ def get_request(test):
         # returned updated test and response data
         return test, resp
 
-    except Exception,e:
+    except Exception:
         print textwrap.fill((" [" + color['red'] + "!" + color['end'] + "] Error contacting %s" \
             % test['url']), initial_indent='', subsequent_indent='\t', width=80)
         if opts.debug:
@@ -501,7 +516,7 @@ def post_request(test):
                 # replace <CSRFTOKEN> with the collected token
                 test['url'] = test['url'].replace("<CSRFTOKEN>", csrf_val)
                 test['postParameters'] = test['postParameters'].replace("<CSRFTOKEN>", csrf_val)
-        
+
         if opts.debug:
             # print debug output
             print textwrap.fill((" [ ] URL (POST): %s" % test['url']),
@@ -517,7 +532,7 @@ def post_request(test):
         # returned updated test and response data
         return test, resp
 
-    except Exception,e:
+    except Exception:
         print textwrap.fill((" [" + color['red'] + "!" + color['end'] + "] Error contacting %s" \
             % test['url']), initial_indent='', subsequent_indent='\t', width=80)
         if opts.debug:
@@ -536,7 +551,7 @@ def request_value(test):
     url = test['url'].split("?", 1)[0] # strip parameters from url where present
     req_val = urllib2.Request(url, '', req_headers)
     response = urllib2.urlopen(req_val)
-    
+
     # capture Set-Cookie
     if test['requestCookie']:
         if response.info().getheader('Set-Cookie'):
@@ -547,7 +562,7 @@ def request_value(test):
                 + "] Set-Cookie Error: No valid Set-Cookie response received"
     else:
         cookie_val = False
-    
+
     # capture CSRF token (using regex from module XML)
     if test['requestCSRF']:
         try:
@@ -612,6 +627,8 @@ def signal_handler(signal, frame):
                 +"] tests stopped after %.2f seconds" % (time.clock() - startTime)
             output_success()
         print "\n\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
+        if opts.outputfile:
+            opts.outputfile.close()
         os._exit(1)
 
 def query_user(question):
@@ -637,73 +654,9 @@ def query_user(question):
                 + "] Please respond with 'yes' or 'no'\n"
 
 def setup():
-    # setup options and handle ctrl+c events
+    # setup command line options and handle ctrl+c events
 
     signal.signal(signal.SIGINT, signal_handler)
-    setup_opts()
-
-    # set verbosity level (-v verbose, -v -v verbose and debug)
-    if not opts.verbose:
-        opts.verbose = False
-        opts.debug = False
-    elif opts.verbose == 1:
-        opts.verbose = True
-        opts.debug = False
-    else:
-        opts.verbose = True
-        opts.debug = True
-
-    # set ansi colors for supported platforms (colorama support for Windows)
-    if sys.platform.startswith("win"):
-        try:
-            import colorama
-            colorama.init()
-            color['red'] = colorama.Fore.RED + colorama.Style.BRIGHT
-            color['green'] = colorama.Fore.GREEN + colorama.Style.BRIGHT
-            color['yellow'] = colorama.Fore.YELLOW + colorama.Style.BRIGHT
-            color['end'] = colorama.Fore.RESET + colorama.Style.RESET_ALL
-        except:
-            # disable colors on systems without colorama installed
-            print "\n\t[!] Colorama Python module not found, color support disabled"
-            color['red'] = ""
-            color['green'] = ""
-            color['yellow'] = ""
-            color['end'] = ""
-    else:
-        # set colors for non-Windows systems
-        color['red'] = "\033[1;31m"
-        color['green'] = "\033[1;32m"
-        color['yellow'] = "\033[1;33m"
-        color['end'] = "\033[0m"
-
-    if opts.single:
-        opts.category = "single" # clear category if single module specified
-
-    if opts.question: # print help on -? also
-        parser.print_help()
-        sys.exit(0)
-
-    # attempt to handle situations where no module or account file is specified
-    # skip section if module output is selected
-    if (opts.moduledir == './modules' and opts.accountfile == './accountfile.txt' \
-        and not opts.listmodules and len(sys.argv) < 3) or \
-        (not opts.listmodules and len(sys.argv) < 3) or \
-        (opts.account and len(sys.argv) < 3):
-        print "\t[ ] No command-line options specified"
-        user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
-            +"] Use default locations and load ALL modules? (dangerous)")
-        if user_input:
-            # continue using defaults
-            print "\t[ ] Continuing using defaults"
-        else:
-            print "\n",
-            parser.print_help()
-            parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] \
-                +"] Please specify arguments\n")
-    display_options()
-
-def setup_opts():
-    # handle command line options
 
     global opts
     parser = OptionParser(version="%prog version ::: " + __version__, epilog="\n")
@@ -757,6 +710,13 @@ def setup_opts():
         help="Show detailed summary at the end",
         )
     parser.add_option(
+        "-o", "--output",
+        dest="outputfile",
+        default=False,
+        help="Output results to a file as well as screen",
+        metavar="FILE"
+        )
+    parser.add_option(
         "-v", "--verbose",
         action="count",
         dest="verbose",
@@ -771,25 +731,110 @@ def setup_opts():
         ) # hidden -? handling
     (opts, args) = parser.parse_args()
 
+    # handle help output
+
+    if opts.question: # print help on -? also
+        parser.print_help()
+        sys.exit(0)
+
+    # set verbosity level (-v verbose, -v -v verbose and debug)
+    if not opts.verbose:
+        opts.verbose = False
+        opts.debug = False
+    elif opts.verbose == 1:
+        opts.verbose = True
+        opts.debug = False
+    else:
+        opts.verbose = True
+        opts.debug = True
+
+    # set ansi colors for supported platforms (colorama support for Windows)
+    if sys.platform.startswith("win"):
+        try:
+            import colorama
+            colorama.init()
+            color['red'] = colorama.Fore.RED + colorama.Style.BRIGHT
+            color['green'] = colorama.Fore.GREEN + colorama.Style.BRIGHT
+            color['yellow'] = colorama.Fore.YELLOW + colorama.Style.BRIGHT
+            color['end'] = colorama.Fore.RESET + colorama.Style.RESET_ALL
+        except:
+            # disable colors on systems without colorama installed
+            print "\n\t[!] Colorama Python module not found, color support disabled"
+            color['red'] = ""
+            color['green'] = ""
+            color['yellow'] = ""
+            color['end'] = ""
+    else:
+        # set colors for non-Windows systems
+        color['red'] = "\033[1;31m"
+        color['green'] = "\033[1;32m"
+        color['yellow'] = "\033[1;33m"
+        color['end'] = "\033[0m"
+
+    # attempt to handle situations where no module or account file is specified
+    # skip section if module output is selected
+    if (opts.moduledir == './modules' and opts.accountfile == './accountfile.txt' \
+        and not opts.listmodules and len(sys.argv) < 3) or \
+        (not opts.listmodules and len(sys.argv) < 3) or \
+        (opts.account and len(sys.argv) < 3):
+        print "\t[ ] No command-line options specified"
+        user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+            +"] Use default locations and load ALL modules? (dangerous)")
+        if user_input:
+            # continue using defaults
+            print "\t[ ] Continuing using defaults"
+        else:
+            print "\n",
+            parser.print_help()
+            parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] \
+                +"] Please specify arguments\n")
+    display_options()
+
+    # check if outputfile exists already and prompt to overwrite
+    if opts.outputfile:
+        if os.path.exists(opts.outputfile):
+            # query user to overwrite existing outputfile
+            user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+                +"] Overwrite existing outputfile?")
+            if user_input:
+                print "\t[ ] Overwriting output file : %s\n" % opts.outputfile
+            else:
+                sys.exit("\n\t[" + color['red'] + "!" + color['end'] \
+                +"] Please specify new output file\n")
+        # open output file
+        try:
+            opts.outputfile = open(opts.outputfile, "w")
+        except:
+            print "[" + color['red'] + "!" + color['end'] \
+                + "] Unable to open output file for writing"
+            if opts.debug:
+                print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
+                traceback.print_exc()
+
+    # clear category if single module specified
+    if opts.single:
+        opts.category = "single"
+
 def display_options():
     # print out the options being used
 
     print "\n ------------------------------------------------------------------------------"
     if not opts.account:
-        print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Account File :::\t\t%s" \
-            % opts.accountfile), initial_indent='', subsequent_indent='\t\t', width=80)
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Account File :::".ljust(30), \
+            str(opts.accountfile).ljust(40)
     else:
-        print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Single Account :::\t%s" \
-            % opts.account), initial_indent='', subsequent_indent='\t\t', width=80)
-    print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Module Directory :::\t%s" \
-        % opts.moduledir), initial_indent='', subsequent_indent='\t\t', width=80)
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Single Account :::".ljust(30), \
+            str(opts.account).ljust(40)
+    print "\t[" + color['yellow'] + "-" + color['end'] +"] Module Directory :::".ljust(30), \
+        str(opts.moduledir).ljust(40)
     if not opts.single:
-        print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Categories :::\t\t%s" \
-            % opts.category), initial_indent='', subsequent_indent='\t\t', width=80)
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Categories :::".ljust(30), \
+            str(opts.category).ljust(40)
     else:
-        print textwrap.fill(("\t[" + color['yellow'] + "-" + color['end'] +"] Single Module :::\t\t%s" \
-            % opts.single), initial_indent='', subsequent_indent='\t\t', width=80)
-    print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::\t\t\t%s" % opts.verbose
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Single Module :::".ljust(30), \
+        str(opts.single).ljust(40)
+    print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
+        str(opts.verbose).ljust(40)
     print " ------------------------------------------------------------------------------\n"
 
 
