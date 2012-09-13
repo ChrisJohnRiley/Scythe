@@ -332,16 +332,23 @@ def load_modules():
     if opts.verbose or opts.listmodules:
         output_modules()  #debug and module output
 
-def load_accounts():
+def load_accounts(acct=None):
+    # if account is passed in we use that, otherwise
     # load accounts from accountfile
     # one account per line
 
-    account_file = open(opts.accountfile, 'r')
-    account_read = account_file.readlines()
-    account_read = [item.rstrip() for item in account_read]
-    for a in account_read:
-        if not a.startswith("#"): # ignore comment lines in accountfile
-            accounts.append(a)
+    if (acct):
+      if opts.verbose:
+        print "using command line supplied user: %s" % acct
+
+      accounts.append(acct)
+    else:
+      account_file = open(opts.accountfile, 'r')
+      account_read = account_file.readlines()
+      account_read = [item.rstrip() for item in account_read]
+      for a in account_read:
+          if not a.startswith("#"): # ignore comment lines in accountfile
+              accounts.append(a)
 
     if opts.verbose:
         output_accounts()  # debug output
@@ -500,7 +507,6 @@ def post_request(test):
                 initial_indent='', subsequent_indent=' -> ', width=80)
 
         req = urllib2.Request(test['url'], test['postParameters'], req_headers)
-        f = urllib2.urlopen(req)
         resp = f.read()
         f.close()
 
@@ -677,7 +683,8 @@ def setup():
     # skip section if module output is selected
     if (opts.moduledir == './modules' and opts.accountfile == './accountfile.txt' \
         and not opts.listmodules and len(sys.argv) < 3) or \
-        (not opts.listmodules and len(sys.argv) < 3):
+        (not opts.listmodules and len(sys.argv) < 3) or \
+        (opts.account and len(sys.argv) < 3):
         print "\t[ ] No command-line options specified"
         user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
             +"] Use default locations and load ALL modules? (dangerous)")
@@ -702,6 +709,13 @@ def setup_opts():
         default="./accountfile.txt",
         help="Location of the accounts FILE - 1 account per line",
         metavar="FILE"
+        )
+    parser.add_option(
+        "-u", "--account",
+        dest="account",
+        default="",
+        help="Specify a single account on the command line",
+        metavar="STRING"
         )
     parser.add_option(
         "-m", "--moduledir",
@@ -775,7 +789,7 @@ def main():
     logo()
     setup()
     load_modules()
-    load_accounts()
+    load_accounts(opts.account)
     testcases = create_testcases()
     make_requests(testcases)
 
