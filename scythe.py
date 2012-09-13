@@ -214,7 +214,8 @@ def extract_module_data(module_dom):
             print "\t[" + color['red'] + "!" + color['end'] \
                 + "] Failed to extracted module information\n\t\tError: %s" % e
             if opts.debug:
-                print traceback.print_exc(file=sys.stdout)
+                print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
+                traceback.print_exc()
             continue
 
 def output_modules():
@@ -460,10 +461,14 @@ def get_request(test):
         return test, resp
 
     except Exception,e:
-        print "\t[" + color['red'] + "!" + color['end'] + "] Error contacting %s" % test['url']
-        print "\t[" + color['red'] + "!" + color['end'] + "] Error : %s" % e
+        print textwrap.fill((" [" + color['red'] + "!" + color['end'] + "] Error contacting %s" \
+            % test['url']), initial_indent='', subsequent_indent='\t', width=80)
         if opts.debug:
-            print traceback.print_exc(file=sys.stdout)
+            for ex in traceback.format_exc().splitlines():
+                print textwrap.fill((" %s" \
+                    % str(ex)), initial_indent='', subsequent_indent='\t', width=80)
+            print "\n"
+        return test, False
 
 def post_request(test):
     # perform POST request
@@ -503,10 +508,14 @@ def post_request(test):
         return test, resp
 
     except Exception,e:
-        print "\t[" + color['red'] + "!" + color['end'] + "] Error contacting %s" % test['url']
-        print "\t[" + color['red'] + "!" + color['end'] + "] Error : %s" % e
+        print textwrap.fill((" [" + color['red'] + "!" + color['end'] + "] Error contacting %s" \
+            % test['url']), initial_indent='', subsequent_indent='\t', width=80)
         if opts.debug:
-            print traceback.print_exc(file=sys.stdout)
+            for ex in traceback.format_exc().splitlines():
+                print textwrap.fill((" %s" \
+                    % str(ex)), initial_indent='', subsequent_indent='\t', width=80)
+            print "\n"
+        return test, False
 
 def request_value(test):
     # request a cookie or CSRF token from the target site for use during the logon attempt
@@ -543,8 +552,9 @@ def request_value(test):
         except:
             print "[" + color['red'] + "!" + color['end'] \
                 + "] Invalid CSRF regex. Please check parameters"
-            if opts.debug:
-                print traceback.print_exc(file=sys.stdout)
+        if opts.debug:
+                print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
+                traceback.print_exc()
     else:
         csrf_val = False
 
@@ -563,7 +573,8 @@ def success_check(data, successmatch):
         print "[" + color['red'] + "!" + color['end'] \
             + "] Invalid in success check. Please check parameter"
         if opts.debug:
-            print traceback.print_exc(file=sys.stdout)
+            print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
+            traceback.print_exc()
 
 def negative_check(data, negativematch):
     # checks response data against negativematch regex
@@ -578,7 +589,8 @@ def negative_check(data, negativematch):
         print "[" + color['red'] + "!" + color['end'] \
             + "] Invalid in negative check. Please check parameter"
         if opts.debug:
-            print traceback.print_exc(file=sys.stdout)
+            print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
+            traceback.print_exc()
 
 def signal_handler(signal, frame):
     # handle CTRL + C events
