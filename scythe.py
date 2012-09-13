@@ -47,9 +47,9 @@ from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
 __license__ = 'GPL'
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 __codename__ = 'Lazy Lizard'
-__date__ = '11 September 2012'
+__date__ = '13 September 2012'
 __maintainer__ = 'ChrisJohnRiley'
 __email__ = 'contact@c22.cc'
 __status__ = 'Beta'
@@ -113,7 +113,8 @@ def extract_module_data(module_dom):
                     # handle instances where people enter False insterad of leaving this field blank
                     xmlData['postParameters'] = ''
                 else:
-                    xmlData['postParameters'] = each.getElementsByTagName('postParameters')[0].firstChild.nodeValue
+                    xmlData['postParameters'] = \
+                        each.getElementsByTagName('postParameters')[0].firstChild.nodeValue
             except (IndexError, AttributeError):
                 xmlData['postParameters'] = ''
 
@@ -123,7 +124,8 @@ def extract_module_data(module_dom):
                     # handle instances where people enter False insterad of leaving this field blank
                     xmlData['headers'] = ''
                 else:
-                    xmlData['headers'] = each.getElementsByTagName('headers')[0].firstChild.nodeValue.split(",")
+                    xmlData['headers'] = \
+                        each.getElementsByTagName('headers')[0].firstChild.nodeValue.split(",")
             except (IndexError, AttributeError):
                 xmlData['headers'] = ''
 
@@ -141,13 +143,15 @@ def extract_module_data(module_dom):
                 if each.getElementsByTagName('requestCSRF')[0].firstChild.nodeValue.lower() == 'false':
                     xmlData['requestCSRF'] = False
                 else:
-                    xmlData['requestCSRF'] = each.getElementsByTagName('requestCSRF')[0].firstChild.nodeValue
+                    xmlData['requestCSRF'] = \
+                        each.getElementsByTagName('requestCSRF')[0].firstChild.nodeValue
             except (IndexError, AttributeError):
                 xmlData['requestCSRF'] = False
 
             # set success match if specified in the module XML
             try:
-                xmlData['successmatch'] = each.getElementsByTagName('successmatch')[0].firstChild.nodeValue
+                xmlData['successmatch'] = \
+                    each.getElementsByTagName('successmatch')[0].firstChild.nodeValue
             except (IndexError, AttributeError):
                 xmlData['successmatch'] = ''
 
@@ -157,7 +161,8 @@ def extract_module_data(module_dom):
                 if each.getElementsByTagName('negativematch')[0].lower() == 'false':
                     xmlData['negativematch'] = ''
                 else:
-                    xmlData['negativematch'] = each.getElementsByTagName('negativematch')[0].firstChild.nodeValue
+                    xmlData['negativematch'] = \
+                        each.getElementsByTagName('negativematch')[0].firstChild.nodeValue
             except (IndexError, AttributeError):
                 xmlData['negativematch'] = ''
 
@@ -193,19 +198,21 @@ def extract_module_data(module_dom):
                     "example" not in opts.category.lower():
                     # skip example module when running with all or default settings
                     if opts.verbose:
-                        print "\t[" + color['red'] + "!" + color['end'] + "] Skipping example module : %s" \
-                            % xmlData['name']
+                        print "\t[" + color['red'] + "!" + color['end'] \
+                            + "] Skipping example module : %s" % xmlData['name']
                 else:
-                    print "\t[" + color['yellow'] + "-" + color['end'] +"] Extracted module information from %s" \
-                        % xmlData['name']
+                    print "\t[" + color['yellow'] + "-" + color['end'] \
+                        +"] Extracted module information from %s" % xmlData['name']
                     modules.append(xmlData)
             else:
                 if opts.verbose:
-                    print "\t[" + color['red'] + "!" + color['end'] + "] Skipping module %s. Not in category (%s)" \
+                    print "\t[" + color['red'] + "!" + color['end'] \
+                        + "] Skipping module %s. Not in category (%s)" \
                         % (xmlData['name'], opts.category)
 
         except Exception, e:
-            print "\t[" + color['red'] + "!" + color['end'] + "] Failed to extracted module information\n\t\tError: %s" % e
+            print "\t[" + color['red'] + "!" + color['end'] \
+                + "] Failed to extracted module information\n\t\tError: %s" % e
             if opts.debug:
                 print traceback.print_exc(file=sys.stdout)
             continue
@@ -306,7 +313,8 @@ def load_modules():
         for d in dirs:
            if d.startswith("."): # ignore hidden . dirctories
                dirs.remove(d)
-        print " [" + color['yellow'] + "-" + color['end'] +"] Starting to load modules from %s\n" % path
+        print " [" + color['yellow'] + "-" + color['end'] \
+            +"] Starting to load modules from %s\n" % path
         for file in files:
             if not path.endswith('/'):
                 path = path + '/'
@@ -317,7 +325,8 @@ def load_modules():
                 module_dom = module_dom.getElementsByTagName('site')
                 extract_module_data(module_dom)
             elif opts.verbose:
-                print "\t[" + color['red'] + "!" + color['end'] + "] Skipping non-XML file : %s" % file
+                print "\t[" + color['red'] + "!" + color['end'] \
+                    + "] Skipping non-XML file : %s" % file
 
     if opts.verbose or opts.listmodules:
         output_modules()  #debug and module output
@@ -339,8 +348,10 @@ def load_accounts():
 def create_testcases():
     # create a list of testcases from accounts and modules
     #
-    # replace functions are in place to replace <ACCOUNT> with the account names presented
-    # the script will also replace any instances of <RANDOM> with a random string (8) to avoid detection
+    # replace functions are in place to replace <ACCOUNT> 
+    #  with the account names presented
+    # the script will also replace any instances of <RANDOM> 
+    #  with a random string (8) to avoid detection
 
     testcases = []
     tempcase = {}
@@ -368,7 +379,8 @@ def make_requests(testcases):
     print "\n ------------------------------------------------------------------------------"
     print string.center(">>>>> Testcases <<<<<", 80)
     print " ------------------------------------------------------------------------------"
-    print " [" + color['yellow'] + "-" + color['end'] +"] Starting testcases (%d in total)\n" % len(testcases)
+    print " [" + color['yellow'] + "-" + color['end'] \
+        +"] Starting testcases (%d in total)\n" % len(testcases)
     progress = 0 # initiate progress count
     progress_last = 0
 
@@ -433,6 +445,7 @@ def get_request(test):
                 # replace <CSRFTOKEN> with the collected token
                 test['url'] = test['url'].replace("<CSRFTOKEN>", csrf_val)
                 test['postParameters'] = test['postParameters'].replace("<CSRFTOKEN>", csrf_val)
+
         if opts.debug:
             # print debug output
             print textwrap.fill((" [ ] URL (GET): %s" % test['url']),
@@ -443,7 +456,9 @@ def get_request(test):
         resp = f.read()
         f.close()
 
+        # returned updated test and response data
         return test, resp
+
     except Exception,e:
         print "\t[" + color['red'] + "!" + color['end'] + "] Error contacting %s" % test['url']
         print "\t[" + color['red'] + "!" + color['end'] + "] Error : %s" % e
@@ -484,7 +499,9 @@ def post_request(test):
         resp = f.read()
         f.close()
 
+        # returned updated test and response data
         return test, resp
+
     except Exception,e:
         print "\t[" + color['red'] + "!" + color['end'] + "] Error contacting %s" % test['url']
         print "\t[" + color['red'] + "!" + color['end'] + "] Error : %s" % e
@@ -497,7 +514,7 @@ def request_value(test):
     urllib.urlcleanup() # clear cache
     user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
     req_headers = { 'User-Agent' : user_agent }
-    url = test['url'].split("&", 1)[0] # strip parameters from url where present
+    url = test['url'].split("?", 1)[0] # strip parameters from url where present
     req_val = urllib2.Request(url, '', req_headers)
     response = urllib2.urlopen(req_val)
     
@@ -507,7 +524,8 @@ def request_value(test):
             cookie_val = response.info().getheader('Set-Cookie') # grab cookies
         else:
             cookie_val = False
-            print "[" + color['red'] + "!" + color['end'] + "] Set-Cookie Error: No valid Set-Cookie response received"
+            print "[" + color['red'] + "!" + color['end'] \
+                + "] Set-Cookie Error: No valid Set-Cookie response received"
     else:
         cookie_val = False
     
@@ -520,9 +538,11 @@ def request_value(test):
                 csrf_val = match.group(1)
             else:
                 csrf_val = False
-                print "[" + color['red'] + "!" + color['end'] + "] Invalid CSRF regex. Please check parameters"
+                print "[" + color['red'] + "!" + color['end'] \
+                    + "] Invalid CSRF regex. Please check parameters"
         except:
-            print "[" + color['red'] + "!" + color['end'] + "] Invalid CSRF regex. Please check parameters"
+            print "[" + color['red'] + "!" + color['end'] \
+                + "] Invalid CSRF regex. Please check parameters"
             if opts.debug:
                 print traceback.print_exc(file=sys.stdout)
     else:
@@ -540,7 +560,8 @@ def success_check(data, successmatch):
         else:
             return False
     except:
-        print "[" + color['red'] + "!" + color['end'] + "] Invalid in success check. Please check parameter"
+        print "[" + color['red'] + "!" + color['end'] \
+            + "] Invalid in success check. Please check parameter"
         if opts.debug:
             print traceback.print_exc(file=sys.stdout)
 
@@ -554,7 +575,8 @@ def negative_check(data, negativematch):
         else:
             return False
     except:
-        print "[" + color['red'] + "!" + color['end'] + "] Invalid in negative check. Please check parameter"
+        print "[" + color['red'] + "!" + color['end'] \
+            + "] Invalid in negative check. Please check parameter"
         if opts.debug:
             print traceback.print_exc(file=sys.stdout)
 
@@ -562,9 +584,10 @@ def signal_handler(signal, frame):
     # handle CTRL + C events
 
         if not len(success) == 0:
-            print "\n[" + color['red'] + "!" + color['end'] + "] Outputting successful findings and closing\n"
-            print "[" + color['yellow'] + "-" + color['end'] +"] tests stopped after %.2f seconds" \
-                % (time.clock() - startTime)
+            print "\n[" + color['red'] + "!" + color['end'] \
+                + "] Outputting successful findings and closing\n"
+            print "[" + color['yellow'] + "-" + color['end'] \
+                +"] tests stopped after %.2f seconds" % (time.clock() - startTime)
             output_success()
         print "\n\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
         os._exit(1)
@@ -580,14 +603,16 @@ def query_user(question):
         try:
             choice = raw_input().lower()
         except:
-            print "\n\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
+            print "\n\n [" + color['red'] + "!" + color['end'] \
+                + "] Ctrl+C detected... exiting\n"
             sys.exit(0)
         if choice == '':
             return valid["no"]
         elif choice in valid:
             return valid[choice]
         else:
-            print "\t[" + color['red'] + "!" + color['end'] + "] Please respond with 'yes' or 'no'\n"
+            print "\t[" + color['red'] + "!" + color['end'] \
+                + "] Please respond with 'yes' or 'no'\n"
 
 def setup():
     # setup options and handle ctrl+c events
@@ -606,7 +631,7 @@ def setup():
         opts.verbose = True
         opts.debug = True
 
-    # set ansi colors for supported platforms (!= Windows)
+    # set ansi colors for supported platforms (colorama support for Windows)
     if sys.platform.startswith("win"):
         try:
             import colorama
@@ -616,12 +641,14 @@ def setup():
             color['yellow'] = colorama.Fore.YELLOW + colorama.Style.BRIGHT
             color['end'] = colorama.Fore.RESET + colorama.Style.RESET_ALL
         except:
-            print "\t[!] Colorama Python module not found, color support disabled"
+            # disable colors on systems without colorama installed
+            print "\n\t[!] Colorama Python module not found, color support disabled"
             color['red'] = ""
             color['green'] = ""
             color['yellow'] = ""
             color['end'] = ""
     else:
+        # set colors for non-Windows systems
         color['red'] = "\033[1;31m"
         color['green'] = "\033[1;32m"
         color['yellow'] = "\033[1;33m"
@@ -648,7 +675,8 @@ def setup():
         else:
             print "\n",
             parser.print_help()
-            parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] +"] Please specify arguments\n")
+            parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] \
+                +"] Please specify arguments\n")
     display_options()
 
 def setup_opts():
@@ -740,11 +768,13 @@ def main():
     make_requests(testcases)
 
     # print success matches
-    print "\n [" + color['yellow'] + "-" + color['end'] +"] tests completed in %.2f seconds" \
+    print "\n [" + color['yellow'] + "-" + color['end'] \
+        +"] tests completed in %.2f seconds" \
         % (time.clock() - startTime)
     if len(success) > 0:
         output_success()
     else:
-        sys.exit("\n\t[" + color['red'] + "!" + color['end'] + "] No matches found. Exiting!")
+        sys.exit("\n\t[" + color['red'] + "!" + color['end'] \
+            + "] No matches found. Exiting!")
 
 main()
