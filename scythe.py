@@ -971,6 +971,9 @@ def main():
         +"] tests completed in %.2f seconds" \
         % (time.clock() - startTime)
     if len(success) > 0:
+        print " [" + color['yellow'] + "-" + color['end'] \
+            +"] %d matche(s) found" \
+            % len(success)
         output_success()
     else:
         sys.exit("\n\t[" + color['red'] + "!" + color['end'] \
