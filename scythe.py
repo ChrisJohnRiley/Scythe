@@ -281,7 +281,7 @@ def output_accounts():
 def output_success():
     # print information about success matches
 
-    if opts.summary or opts.verbose:
+    if opts.summary or (opts.verbose and opts.summary):
         print "\n ------------------------------------------------------------------------------"
         print string.center(color['yellow'] + ">>>>>" + color['end'] + " Successful Matches " + \
         color['yellow'] + "<<<<<" + color['end'], 120)
@@ -290,7 +290,7 @@ def output_success():
         # print normal summary table on request (--summary)
         if not opts.verbose and opts.summary:
             print "\n ------------------------------------------------------------------------------"
-            print " ", "| Module |".ljust(35), "| Account |".ljust(28)
+            print " ", "| Module |".ljust(35), " | Account |".ljust(28)
             print " ------------------------------------------------------------------------------"
             for s in s_success:
                 print "  " + s['name'].ljust(37) + s['account'].ljust(30)
@@ -397,8 +397,15 @@ def make_requests(testcases):
     print string.center(color['yellow'] + ">>>>>" + color['end'] + " Testcases " + \
         color['yellow'] + "<<<<<" + color['end'], 120)
     print " ------------------------------------------------------------------------------"
+    
     print " [" + color['yellow'] + "-" + color['end'] \
-        +"] Starting testcases (%d in total)\n" % len(testcases)
+            +"] Starting testcases (%d in total)" % len(testcases)
+    if opts.throttle:
+        print " [" + color['yellow'] + "-" + color['end'] \
+            +"] Throttling in place (%.2f seconds)\n" % opts.throttle
+    else:
+        print "\n"
+
     progress = 0 # initiate progress count
     progress_last = 0
 
@@ -627,13 +634,15 @@ def negative_check(data, negativematch):
 def signal_handler(signal, frame):
     # handle CTRL + C events
 
+        print "\n"
         if not len(success) == 0:
-            print "\n[" + color['red'] + "!" + color['end'] \
-                + "] Outputting successful findings and closing\n"
-            print "[" + color['yellow'] + "-" + color['end'] \
-                +"] tests stopped after %.2f seconds" % (time.clock() - startTime)
+            if opts.summary or (opts.verbose and opts.summary):
+                print " [" + color['red'] + "!" + color['end'] \
+                    + "] Outputting successful findings and closing\n"
             output_success()
-        print "\n\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
+        print " [" + color['yellow'] + "-" + color['end'] \
+                +"] tests stopped after %.2f seconds" % (time.clock() - startTime)
+        print "\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
         if opts.outputfile and not isinstance(opts.outputfile, str):
             # if opts.outputfile is an open file, close it to save output
             opts.outputfile.close()
@@ -854,6 +863,9 @@ def display_options():
     if opts.outputfile:
         # get filename based on current path
         file = os.path.realpath(opts.outputfile).replace(os.getcwd(), "")
+        if file.startswith("\\"):
+            # strip leading \ from file display
+            file = file[1:]
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Output :::".ljust(30), \
             str(file).ljust(40)
     if opts.throttle:
