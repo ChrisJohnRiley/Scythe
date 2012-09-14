@@ -24,7 +24,8 @@ scythe: account enumerator
     and may breach end user license agreements if used against a site. Your mileage may
     vary... be responsible!
 
-    External module depenancies: colorama (Windows only, optional)
+    External module depenancies:
+        colorama (Windows only, optional)
 
 Example Usage:
 ==============
@@ -37,6 +38,18 @@ Example Usage:
 
     ./scythe.py --single facebook.com --accountfile=accountfile.txt
 
+> Check account list against facebook (using threads, w/ summary output)
+
+    ./scythe.py --single facebook.com --accountfile=accountfile.txt --threads 4 --summary
+
 > Check account list against all modules in the social category (w/ summary output)
 
     ./scythe.py --category=social --accountfile=accountfile.txt --summary
+
+> Check single account against facebook
+
+    ./scythe.py --single facebook.com --account=testuser
+    
+> Check account list against facebook (output to logfile)
+
+    ./scythe.py --single facebook.com --accountfile=accountfile.txt --output=logfile.txt
