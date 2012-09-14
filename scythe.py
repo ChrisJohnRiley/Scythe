@@ -442,6 +442,8 @@ def request_handler(testcases):
                     progress_last = progressbar(progress, len(testcases), progress_last)
                     # mark task as done
                     queue.task_done()
+
+        # wait for queue and threads to end before continuing
         t.join()
         queue.join()
 
