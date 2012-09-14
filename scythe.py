@@ -225,7 +225,8 @@ def output_modules():
     # print information about the loaded module(s)
 
     print "\n ------------------------------------------------------------------------------"
-    print string.center(">>>>> Module Information <<<<<", 80)
+    print string.center(color['yellow'] + ">>>>>" + color['end'] + " Module Information " + \
+        color['yellow'] + "<<<<<" + color['end'], 120)
     print " ------------------------------------------------------------------------------"
     if opts.verbose and not opts.listmodules:
         for mod in modules:
@@ -269,7 +270,8 @@ def output_accounts():
     # print information about the accounts loaded from accountfile
 
     print "\n ------------------------------------------------------------------------------"
-    print string.center(">>>>> Accounts Loaded <<<<<", 80)
+    print string.center(color['yellow'] + ">>>>>" + color['end'] + " Accounts Loaded " + \
+        color['yellow'] + "<<<<<" + color['end'], 120)
     print " ------------------------------------------------------------------------------"
     for a in accounts:
         print textwrap.fill((" Account name: %s" % a),
@@ -281,7 +283,8 @@ def output_success():
 
     if opts.summary or opts.verbose:
         print "\n ------------------------------------------------------------------------------"
-        print string.center(">>>>> Successful matches <<<<<", 80)
+        print string.center(color['yellow'] + ">>>>>" + color['end'] + " Successful Matches " + \
+        color['yellow'] + "<<<<<" + color['end'], 120)
         print " ------------------------------------------------------------------------------"
         s_success = sorted(success, key=lambda k: k['name']) # group by site name
         # print normal summary table on request (--summary)
@@ -391,7 +394,8 @@ def make_requests(testcases):
     # make a requests present in testcases
 
     print "\n ------------------------------------------------------------------------------"
-    print string.center(">>>>> Testcases <<<<<", 80)
+    print string.center(color['yellow'] + ">>>>>" + color['end'] + " Testcases " + \
+        color['yellow'] + "<<<<<" + color['end'], 120)
     print " ------------------------------------------------------------------------------"
     print " [" + color['yellow'] + "-" + color['end'] \
         +"] Starting testcases (%d in total)\n" % len(testcases)
@@ -852,7 +856,7 @@ def main():
     testcases = create_testcases()
     make_requests(testcases)
 
-    # print success matches
+    # print success matches at the end
     print "\n [" + color['yellow'] + "-" + color['end'] \
         +"] tests completed in %.2f seconds" \
         % (time.clock() - startTime)
