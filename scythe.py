@@ -549,8 +549,13 @@ def get_request(test):
             print textwrap.fill((" [ ] URL (GET): %s" % test['url']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
 
+        # assign NullHTTPErrorProcessor as default opener
+        opener = urllib2.build_opener(NullHTTPErrorProcessor())
+        urllib2.install_opener(opener)
+
         req = urllib2.Request(test['url'], '',req_headers)
         f = urllib2.urlopen(req)
+
         resp = f.read()
         f.close()
 
@@ -595,6 +600,10 @@ def post_request(test):
                 initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" [ ] POST PARAMETERS: %s" % test['postParameters']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
+
+        # assign NullHTTPErrorProcessor as default opener
+        opener = urllib2.build_opener(NullHTTPErrorProcessor())
+        urllib2.install_opener(opener)
 
         req = urllib2.Request(test['url'], test['postParameters'], req_headers)
         f = urllib2.urlopen(req)
@@ -955,7 +964,12 @@ def display_options():
             str(opts.threads) + " threads".ljust(40)
     print " ------------------------------------------------------------------------------\n"
 
-
+class NullHTTPErrorProcessor(urllib2.HTTPErrorProcessor):
+    # return contents without handling errors
+    def http_response(self, request, response):
+        return response
+    def https_response(self, request, response):
+        return response
 
 
 def main():
