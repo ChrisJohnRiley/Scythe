@@ -27,7 +27,8 @@
     and may breach end user license agreements if used against a site. Your mileage may
     vary... be responsible!
 
-    External module depenancies: colorama (Windows only, optional)
+    External module depenancies: 
+        colorama (Windows only, optional)
 
 """
 
@@ -835,6 +836,11 @@ def display_options():
         str(opts.single).ljust(40)
     print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
         str(opts.verbose).ljust(40)
+    if opts.outputfile:
+        # get filename based on current path
+        file = os.path.realpath(opts.outputfile).replace(os.getcwd(), "")
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Output :::".ljust(30), \
+            str(file).ljust(40)
     print " ------------------------------------------------------------------------------\n"
 
 
