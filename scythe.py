@@ -42,6 +42,8 @@ import textwrap
 import sys
 import traceback
 import time
+import Queue
+from threading import Thread, activeCount
 from random import Random
 from optparse import OptionParser, SUPPRESS_HELP
 from array import *
@@ -49,9 +51,9 @@ from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
 __license__ = 'GPL'
-__version__ = '0.1.5'
+__version__ = '0.1.6'
 __codename__ = 'Lazy Lizard'
-__date__ = '13 September 2012'
+__date__ = '14 September 2012'
 __maintainer__ = 'ChrisJohnRiley'
 __email__ = 'contact@c22.cc'
 __status__ = 'Beta'
@@ -60,7 +62,9 @@ modules = []
 accounts = []
 success = []
 color = {}
+queue = Queue.Queue()
 startTime = time.clock()
+sigint = False
 
 def logo():
     # because ASCII-art is the future!
@@ -390,8 +394,8 @@ def create_testcases():
 
     return testcases
 
-def make_requests(testcases):
-    # make a requests present in testcases
+def request_handler(testcases):
+    # handle requests present in testcases
 
     print "\n ------------------------------------------------------------------------------"
     print string.center(color['yellow'] + ">>>>>" + color['end'] + " Testcases " + \
@@ -400,70 +404,122 @@ def make_requests(testcases):
     
     print " [" + color['yellow'] + "-" + color['end'] \
             +"] Starting testcases (%d in total)" % len(testcases)
-    if opts.throttle:
+    if opts.wait:
         print " [" + color['yellow'] + "-" + color['end'] \
-            +"] Throttling in place (%.2f seconds)\n" % opts.throttle
+            +"] Throttling in place (%.2f seconds)\n" % opts.wait
+    elif opts.threads:
+        print " [" + color['yellow'] + "-" + color['end'] \
+            +"] Threading in use (%d threadss)\n" % opts.threads
     else:
         print "\n"
 
     progress = 0 # initiate progress count
     progress_last = 0
+    
 
-    for test in testcases:
-        # progressbar
-        if len(testcases) > 50: # only show progress on tests of > 50
-            if not progress == 0:
-                progress_percentage = int(100 / (float(len(testcases)) / float(progress)))
-                if progress_percentage - progress_last > 20: # only update percentage in 20% chunks
-                    print " [" + color['yellow'] + "-" + color['end'] +"] [%s] %s%% complete\n" \
-                        % ((color['yellow'] + ("#"*(progress_percentage / 10)) + \
-                        color['end']).ljust(10, "."),progress_percentage),
-                    progress_last = progress_percentage
+    if opts.threads > 1:
+        for test in testcases:
+            # add testcases to queue
+            queue.put(test)
 
-        # GET method worker
-        if test['method'] == 'GET':
-            test, resp = get_request(test)
-            if resp and test['successmatch']:
-                matched = success_check(resp, test['successmatch'])
-                if matched:
-                    print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
-                        % (test['account'], test['name'])
-                    success.append(test)
-                    if opts.outputfile:
-                        # log to outputfile
-                        opts.outputfile.write("Account " + test['account'] + " exists on " \
-                            + test['name'] +"\n")
-            if resp and test['negativematch']:
-                matched = negative_check(resp, test['negativematch'])
-                if matched and opts.verbose:
-                    print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
-                        % (test['account'], test['name'])
+        while not queue.empty():
+            if sigint: # check for CTRL+C and break
+                break
+            elif opts.threads > activeCount():
+                # only allow a limited number of threads
+                if sigint: # check for CTRL+C and break
+                    break
+                # get next test from queue
+                test = queue.get()
+                try:
+                    # setup thread to perform test
+                    t = Thread(target=make_request, args=(test,))
+                    t.start()
+                finally:
+                    # iterate progress value for the progress bar
+                    progress = progress +1
+                    # call progressbar
+                    progress_last = progressbar(progress, len(testcases), progress_last)
+                    # mark task as done
+                    queue.task_done()
+        t.join()
+        queue.join()
 
-        # POST method worker
-        elif test['method'] == 'POST':
-            test, resp = post_request(test)
-            if resp and test['successmatch']:
-                matched = success_check(resp, test['successmatch'])
-                if matched:
-                    print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
-                        % (test['account'], test['name'])
-                    success.append(test)
-                    if opts.outputfile:
-                        # log to outputfile
-                        opts.outputfile.write("Account " + test['account'] + " exists on " \
-                            + test['name'] +"\n")
-            if resp and test['negativematch']:
-                matched = negative_check(resp, test['negativematch'])
-                if matched and opts.verbose:
-                    print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
-                        % (test['account'], test['name'])
-        else:
-            print "[" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" \
-                % test['method'], test['url']
+    else:
+        for test in testcases:
+            # make request without using threading
+            make_request(test)
+            # iterate progress value for the progress bar
+            progress = progress +1
+            # call progressbar
+            progress_last = progressbar(progress, len(testcases), progress_last)
 
-        progress = progress +1 # iterate progress value for the progress bar
-        if opts.throttle: # wait X seconds as per throttle setting
-            time.sleep(opts.throttle)
+            if opts.wait: # wait X seconds as per wait setting
+                time.sleep(opts.wait)
+
+    return
+
+def progressbar(progress, total, progress_last):
+    # progressbar
+
+    if total > 0: # only show progress on tests of > 50
+        if not progress == 0:
+            progress_percentage = int(100 / (float(total) / float(progress)))
+            if progress_percentage - progress_last > 20: # only update percentage in 20% chunks
+                print " [" + color['yellow'] + "-" + color['end'] +"] [%s] %s%% complete\n" \
+                    % ((color['yellow'] + ("#"*(progress_percentage / 10)) + \
+                    color['end']).ljust(10, "."),progress_percentage),
+                progress_last = progress_percentage
+                return progress_last
+        return 0
+
+def make_request(test):
+    # make request and add output to array
+
+    # GET method worker
+    if test['method'] == 'GET':
+        test, resp = get_request(test)
+        if resp and test['successmatch']:
+            matched = success_check(resp, test['successmatch'])
+            if matched:
+                print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
+                    % (test['account'], test['name'])
+                success.append(test)
+                if opts.outputfile:
+                    # log to outputfile
+                    opts.outputfile.write("Account " + test['account'] + " exists on " \
+                        + test['name'] +"\n")
+        if resp and test['negativematch']:
+            matched = negative_check(resp, test['negativematch'])
+            if matched and opts.verbose:
+                print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
+                    % (test['account'], test['name'])
+        return
+
+    # POST method worker
+    elif test['method'] == 'POST':
+        test, resp = post_request(test)
+        if resp and test['successmatch']:
+            matched = success_check(resp, test['successmatch'])
+            if matched:
+                print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
+                    % (test['account'], test['name'])
+                success.append(test)
+                if opts.outputfile:
+                    # log to outputfile
+                    opts.outputfile.write("Account " + test['account'] + " exists on " \
+                        + test['name'] +"\n")
+        if resp and test['negativematch']:
+            matched = negative_check(resp, test['negativematch'])
+            if matched and opts.verbose:
+                print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
+                    % (test['account'], test['name'])
+        return
+
+    else:
+        print "[" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" \
+            % test['method'], test['url']
+        return
 
 def get_request(test):
     # perform GET request
@@ -634,19 +690,23 @@ def negative_check(data, negativematch):
 def signal_handler(signal, frame):
     # handle CTRL + C events
 
-        print "\n"
-        if not len(success) == 0:
-            if opts.summary or (opts.verbose and opts.summary):
-                print " [" + color['red'] + "!" + color['end'] \
-                    + "] Outputting successful findings and closing\n"
-            output_success()
-        print " [" + color['yellow'] + "-" + color['end'] \
-                +"] tests stopped after %.2f seconds" % (time.clock() - startTime)
-        print "\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
-        if opts.outputfile and not isinstance(opts.outputfile, str):
-            # if opts.outputfile is an open file, close it to save output
-            opts.outputfile.close()
-        os._exit(1)
+    # globally signal threads to end
+    global sigint
+    sigint = True
+  
+    print "\n"
+    if not len(success) == 0:
+        if opts.summary or (opts.verbose and opts.summary):
+            print " [" + color['red'] + "!" + color['end'] \
+                + "] Outputting successful findings and closing\n"
+        output_success()
+    print " [" + color['yellow'] + "-" + color['end'] \
+            +"] tests stopped after %.2f seconds" % (time.clock() - startTime)
+    print "\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
+    if opts.outputfile and not isinstance(opts.outputfile, str):
+        # if opts.outputfile is an open file, close it to save output
+        opts.outputfile.close()
+    os._exit(1)
 
 def query_user(question):
     # query user for Y/N response
@@ -720,6 +780,14 @@ def setup():
         metavar="STRING"
         )
     parser.add_option(
+        "-t", "--threads",
+        dest="threads",
+        default=0,
+        help="Enable threading. Specify number of threads",
+        metavar="INT",
+        type="int"
+        )
+    parser.add_option(
         "--summary",
         action="store_true",
         dest="summary",
@@ -734,10 +802,10 @@ def setup():
         metavar="FILE"
         )
     parser.add_option(
-        "-t", "--throttle",
-        dest="throttle",
+        "-w", "--wait",
+        dest="wait",
         default=False,
-        help="Wait between tests (e.g. -t 0.5 for 0.5 second delay",
+        help="Throttle tests (e.g. -t 0.5 for 0.5 second wait between checks",
         type="float",
         metavar="SECONDS"
         )
@@ -757,7 +825,6 @@ def setup():
     (opts, args) = parser.parse_args()
 
     # handle help output
-
     if opts.question: # print help on -? also
         parser.print_help()
         sys.exit(0)
@@ -795,6 +862,12 @@ def setup():
         color['green'] = "\033[1;32m"
         color['yellow'] = "\033[1;33m"
         color['end'] = "\033[0m"
+
+    # error on wait AND threads
+    if opts.wait and opts.threads > 0:
+        parser.print_help()
+        parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] \
+                +"] Please don't set throttling (wait) AND threading!\n")
 
     # attempt to handle situations where no module or account file is specified
     # skip section if module output is selected
@@ -868,10 +941,15 @@ def display_options():
             file = file[1:]
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Output :::".ljust(30), \
             str(file).ljust(40)
-    if opts.throttle:
-        print "\t[" + color['yellow'] + "-" + color['end'] +"] Throttle :::".ljust(30), \
-            str(opts.throttle) + " seconds".ljust(40)
+    if opts.wait:
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Throttling :::".ljust(30), \
+            str(opts.wait) + " seconds".ljust(40)
+    if opts.threads:
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Threads :::".ljust(30), \
+            str(opts.threads) + " threads".ljust(40)
     print " ------------------------------------------------------------------------------\n"
+
+
 
 
 def main():
@@ -880,7 +958,7 @@ def main():
     load_modules()
     load_accounts()
     testcases = create_testcases()
-    make_requests(testcases)
+    request_handler(testcases)
 
     # print success matches at the end
     print "\n [" + color['yellow'] + "-" + color['end'] \
