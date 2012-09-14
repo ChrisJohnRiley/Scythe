@@ -869,6 +869,10 @@ def setup():
         parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] \
                 +"] Please don't set throttling (wait) AND threading!\n")
 
+    # disable threads if --acount specified at the command line
+    if opts.threads and opts.account:
+        opts.threads = 0 # turn off threads
+
     # attempt to handle situations where no module or account file is specified
     # skip section if module output is selected
     if (opts.moduledir == './modules' and opts.accountfile == './accountfile.txt' \
