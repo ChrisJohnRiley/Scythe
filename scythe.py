@@ -455,6 +455,8 @@ def make_requests(testcases):
                 % test['method'], test['url']
 
         progress = progress +1 # iterate progress value for the progress bar
+        if opts.throttle: # wait X seconds as per throttle setting
+            time.sleep(opts.throttle)
 
 def get_request(test):
     # perform GET request
@@ -632,7 +634,8 @@ def signal_handler(signal, frame):
                 +"] tests stopped after %.2f seconds" % (time.clock() - startTime)
             output_success()
         print "\n\n [" + color['red'] + "!" + color['end'] + "] Ctrl+C detected... exiting\n"
-        if opts.outputfile:
+        if opts.outputfile and not isinstance(opts.outputfile, str):
+            # if opts.outputfile is an open file, close it to save output
             opts.outputfile.close()
         os._exit(1)
 
@@ -720,6 +723,14 @@ def setup():
         default=False,
         help="Output results to a file as well as screen",
         metavar="FILE"
+        )
+    parser.add_option(
+        "-t", "--throttle",
+        dest="throttle",
+        default=False,
+        help="Wait between tests (e.g. -t 0.5 for 0.5 second delay",
+        type="float",
+        metavar="SECONDS"
         )
     parser.add_option(
         "-v", "--verbose",
@@ -845,6 +856,9 @@ def display_options():
         file = os.path.realpath(opts.outputfile).replace(os.getcwd(), "")
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Output :::".ljust(30), \
             str(file).ljust(40)
+    if opts.throttle:
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Throttle :::".ljust(30), \
+            str(opts.throttle) + " seconds".ljust(40)
     print " ------------------------------------------------------------------------------\n"
 
 
