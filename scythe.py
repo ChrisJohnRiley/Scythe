@@ -27,7 +27,7 @@
     and may breach end user license agreements if used against a site. Your mileage may
     vary... be responsible!
 
-    External module depenancies: 
+    External module depenancies:
         colorama (Windows only, optional)
 
 """
@@ -43,7 +43,8 @@ import sys
 import traceback
 import time
 import Queue
-from threading import Thread, activeCount
+from Cookie import BaseCookie
+from threading import Thread, activeCount, Lock
 from random import Random
 from optparse import OptionParser, SUPPRESS_HELP
 from array import *
@@ -51,9 +52,9 @@ from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
 __license__ = 'GPL'
-__version__ = '0.1.6'
+__version__ = '0.2.0'
 __codename__ = 'Lazy Lizard'
-__date__ = '14 September 2012'
+__date__ = '15 September 2012'
 __maintainer__ = 'ChrisJohnRiley'
 __email__ = 'contact@c22.cc'
 __status__ = 'Beta'
@@ -89,7 +90,7 @@ def logo():
 def extract_module_data(file, module_dom):
     # extract module information from the provided dom
 
-    print "\n",
+    print
     for each in module_dom:
         try:
             xmlData = {}
@@ -145,14 +146,32 @@ def extract_module_data(file, module_dom):
                 xmlData['requestCookie'] = False
 
             # set csrf mode if set in the module XML
+            # Extract csrf_url and csrf_regex if present
+            # if not default to False
             try:
                 if each.getElementsByTagName('requestCSRF')[0].firstChild.nodeValue.lower() == 'false':
                     xmlData['requestCSRF'] = False
+                    # set csrf_url and csrf_regex to False by default
+                    xmlData['csrf_url'] = False
+                    xmlData['csrf_regex'] = False
                 else:
-                    xmlData['requestCSRF'] = \
-                        each.getElementsByTagName('requestCSRF')[0].firstChild.nodeValue
+                    xmlData['requestCSRF'] = True
+                    if each.getElementsByTagName('csrf_url')[0].firstChild:
+                        xmlData['csrf_url'] = \
+                            each.getElementsByTagName('csrf_url')[0].firstChild.nodeValue
+                    else:
+                        # if no specific csrf_url is set, default to xmlData['url']'
+                        xmlData['csrf_url'] = xmlData['url']
+                    if each.getElementsByTagName('csrf_regex')[0].firstChild:
+                        xmlData['csrf_regex'] = \
+                            each.getElementsByTagName('csrf_regex')[0].firstChild.nodeValue
+                    else:
+                        xmlData['csrf_regex'] = 'unspecified'
             except (IndexError, AttributeError):
+                # if requestCSRF not present or noneType
                 xmlData['requestCSRF'] = False
+                xmlData['csrf_url'] = False
+                xmlData['csrf_regex'] = False
 
             # set success match if specified in the module XML
             try:
@@ -202,13 +221,13 @@ def extract_module_data(file, module_dom):
                 (opts.single.lower() and opts.single.lower() in xmlData['name'].lower()) or \
                 (file.lower() in opts.single.lower()):
                 if xmlData['category'].lower() == "example" and \
-                    "example" not in opts.category.lower():
+                    ("example" not in opts.category.lower() and not opts.single):
                     # skip example module when running with all or default settings
                     if opts.verbose:
                         print "\t[" + color['red'] + "!" + color['end'] \
                             + "] Skipping example module : %s" % xmlData['name']
                 else:
-                    print "\t[" + color['yellow'] + "-" + color['end'] \
+                    print "\t[" + color['yellow'] + "+" + color['end'] \
                         +"] Extracted module information from %s" % xmlData['name']
                     modules.append(xmlData)
             else:
@@ -230,7 +249,7 @@ def output_modules():
 
     print "\n ------------------------------------------------------------------------------"
     print string.center(color['yellow'] + ">>>>>" + color['end'] + " Module Information " + \
-        color['yellow'] + "<<<<<" + color['end'], 120)
+        color['yellow'] + "<<<<<" + color['end'], 100)
     print " ------------------------------------------------------------------------------"
     if opts.verbose and not opts.listmodules:
         for mod in modules:
@@ -275,7 +294,7 @@ def output_accounts():
 
     print "\n ------------------------------------------------------------------------------"
     print string.center(color['yellow'] + ">>>>>" + color['end'] + " Accounts Loaded " + \
-        color['yellow'] + "<<<<<" + color['end'], 120)
+        color['yellow'] + "<<<<<" + color['end'], 100)
     print " ------------------------------------------------------------------------------"
     for a in accounts:
         print textwrap.fill((" Account name: %s" % a),
@@ -288,7 +307,7 @@ def output_success():
     if opts.summary or (opts.verbose and opts.summary):
         print "\n ------------------------------------------------------------------------------"
         print string.center(color['yellow'] + ">>>>>" + color['end'] + " Successful Matches " + \
-        color['yellow'] + "<<<<<" + color['end'], 120)
+        color['yellow'] + "<<<<<" + color['end'], 100)
         print " ------------------------------------------------------------------------------"
         s_success = sorted(success, key=lambda k: k['name']) # group by site name
         # print normal summary table on request (--summary)
@@ -355,7 +374,11 @@ def load_accounts():
         accounts.append(opts.account)
 
     else:
-    # load accounts from file
+    # load accounts from file if it exists
+        if not os.path.exists(opts.accountfile):
+            print "\n [" + color['red'] + "!" + color['end'] \
+                + "] The supplied file  (%s) does not exist!" % opts.accountfile
+            sys.exit(0)
         account_file = open(opts.accountfile, 'r')
         account_read = account_file.readlines()
         account_read = [item.rstrip() for item in account_read]
@@ -387,6 +410,8 @@ def create_testcases():
             tempcase['headers'] = m['headers']
             tempcase['requestCookie'] = m['requestCookie']
             tempcase['requestCSRF'] = m['requestCSRF']
+            tempcase['csrf_url'] = m['csrf_url']
+            tempcase['csrf_regex'] = m['csrf_regex']
             tempcase['successmatch'] = m['successmatch']
             tempcase['negativematch'] = m['negativematch']
             testcases.append(tempcase)
@@ -399,9 +424,9 @@ def request_handler(testcases):
 
     print "\n ------------------------------------------------------------------------------"
     print string.center(color['yellow'] + ">>>>>" + color['end'] + " Testcases " + \
-        color['yellow'] + "<<<<<" + color['end'], 120)
+        color['yellow'] + "<<<<<" + color['end'], 100)
     print " ------------------------------------------------------------------------------"
-    
+
     print " [" + color['yellow'] + "-" + color['end'] \
             +"] Starting testcases (%d in total)" % len(testcases)
     if opts.wait:
@@ -411,16 +436,17 @@ def request_handler(testcases):
         print " [" + color['yellow'] + "-" + color['end'] \
             +"] Threading in use (%d threadss)\n" % opts.threads
     else:
-        print "\n"
+        print
 
     progress = 0 # initiate progress count
-    progress_last = 0
-    
 
     if opts.threads > 1:
         for test in testcases:
             # add testcases to queue
             queue.put(test)
+
+        # create progress update lock
+        progress_lock = Lock()
 
         while not queue.empty():
             if sigint: # check for CTRL+C and break
@@ -437,15 +463,20 @@ def request_handler(testcases):
                     t.start()
                 finally:
                     # iterate progress value for the progress bar
-                    progress = progress +1
+                    progress = len(testcases) - queue.qsize()
                     # call progressbar
-                    progress_last = progressbar(progress, len(testcases), progress_last)
+                    progress_lock.acquire()
+                    try:
+                        progressbar(progress, len(testcases))
+                    finally:
+                        progress_lock.release()
                     # mark task as done
                     queue.task_done()
 
         # wait for queue and threads to end before continuing
-        t.join()
         queue.join()
+        while activeCount()>1:
+            time.sleep(1)
 
     else:
         for test in testcases:
@@ -454,26 +485,28 @@ def request_handler(testcases):
             # iterate progress value for the progress bar
             progress = progress +1
             # call progressbar
-            progress_last = progressbar(progress, len(testcases), progress_last)
+            progressbar(progress, len(testcases))
 
             if opts.wait: # wait X seconds as per wait setting
                 time.sleep(opts.wait)
 
     return
 
-def progressbar(progress, total, progress_last):
+def progressbar(progress, total):
     # progressbar
 
-    if total > 0: # only show progress on tests of > 50
+    if total > 50: # only show progress on tests of > 50
         if not progress == 0:
+            # set percentage
             progress_percentage = int(100 / (float(total) / float(progress)))
-            if progress_percentage - progress_last > 20: # only update percentage in 20% chunks
+            # display progress at set points
+            total = float(total)
+            # calculate progress for 25, 50, 75, and 99%
+            vals = [int(total/100*25), int(total/100*50), int(total/100*75), int(total-1)]
+            if progress in vals:
                 print " [" + color['yellow'] + "-" + color['end'] +"] [%s] %s%% complete\n" \
                     % ((color['yellow'] + ("#"*(progress_percentage / 10)) + \
                     color['end']).ljust(10, "."),progress_percentage),
-                progress_last = progress_percentage
-                return progress_last
-        return 0
 
 def make_request(test):
     # make request and add output to array
@@ -519,7 +552,7 @@ def make_request(test):
         return
 
     else:
-        print "[" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" \
+        print " [" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" \
             % test['method'], test['url']
         return
 
@@ -533,6 +566,8 @@ def get_request(test):
         req_headers = { 'User-Agent' : user_agent }
         for each in test['headers']:
             key, val = each.split(":", 1)
+            key = key.lstrip()
+            val = val.lstrip()
             req_headers[key] = val
         if test['requestCookie'] or test['requestCSRF']:
             # request cookie and csrf token if set in module XML
@@ -543,6 +578,7 @@ def get_request(test):
                 # replace <CSRFTOKEN> with the collected token
                 test['url'] = test['url'].replace("<CSRFTOKEN>", csrf_val)
                 test['postParameters'] = test['postParameters'].replace("<CSRFTOKEN>", csrf_val)
+                test['headers'] = [h.replace('<CSRFTOKEN>', csrf_val) for h in test['headers']]
 
         if opts.debug:
             # print debug output
@@ -553,9 +589,8 @@ def get_request(test):
         opener = urllib2.build_opener(NullHTTPErrorProcessor())
         urllib2.install_opener(opener)
 
-        req = urllib2.Request(test['url'], '',req_headers)
+        req = urllib2.Request(test['url'], headers=req_headers)
         f = urllib2.urlopen(req)
-
         resp = f.read()
         f.close()
 
@@ -569,7 +604,7 @@ def get_request(test):
             for ex in traceback.format_exc().splitlines():
                 print textwrap.fill((" %s" \
                     % str(ex)), initial_indent='', subsequent_indent='\t', width=80)
-            print "\n"
+            print
         return test, False
 
 def post_request(test):
@@ -580,10 +615,7 @@ def post_request(test):
     try:
         user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
         req_headers = { 'User-Agent' : user_agent }
-        if test['headers']:
-            for each in test['headers']:
-                key, val = each.split(":", 1)
-                req_headers[key] = val
+
         if test['requestCookie'] or test['requestCSRF']:
             # request cookie and csrf token if set in module XML
             cookie_val, csrf_val = request_value(test)
@@ -593,13 +625,23 @@ def post_request(test):
                 # replace <CSRFTOKEN> with the collected token
                 test['url'] = test['url'].replace("<CSRFTOKEN>", csrf_val)
                 test['postParameters'] = test['postParameters'].replace("<CSRFTOKEN>", csrf_val)
+                test['headers'] = [h.replace('<CSRFTOKEN>', csrf_val) for h in test['headers']]
+
+        if test['headers']:
+            for each in test['headers']:
+                key, val = each.split(":", 1)
+                key = key.lstrip()
+                val = val.lstrip()
+                req_headers[key] = val
 
         if opts.debug:
             # print debug output
+            print
             print textwrap.fill((" [ ] URL (POST): %s" % test['url']),
-                initial_indent='', subsequent_indent=' -> ', width=80)
+                initial_indent='', subsequent_indent='  -> ', width=80)
             print textwrap.fill((" [ ] POST PARAMETERS: %s" % test['postParameters']),
-                initial_indent='', subsequent_indent=' -> ', width=80)
+                initial_indent='', subsequent_indent='  -> ', width=80)
+            print
 
         # assign NullHTTPErrorProcessor as default opener
         opener = urllib2.build_opener(NullHTTPErrorProcessor())
@@ -620,47 +662,74 @@ def post_request(test):
             for ex in traceback.format_exc().splitlines():
                 print textwrap.fill((" %s" \
                     % str(ex)), initial_indent='', subsequent_indent='\t', width=80)
-            print "\n"
+            print
         return test, False
 
 def request_value(test):
     # request a cookie or CSRF token from the target site for use during the logon attempt
 
     urllib.urlcleanup() # clear cache
-    user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
-    req_headers = { 'User-Agent' : user_agent }
-    url = test['url'].split("?", 1)[0] # strip parameters from url where present
-    req_val = urllib2.Request(url, '', req_headers)
-    response = urllib2.urlopen(req_val)
+
+    # assign NullHTTPErrorProcessor as default opener
+    opener = urllib2.build_opener(NullHTTPErrorProcessor())
+    urllib2.install_opener(opener)
+
+    # capture cookie first for use with the CSRF token request
 
     # capture Set-Cookie
     if test['requestCookie']:
+        user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
+        req_headers = { 'User-Agent' : user_agent }
+        if test['csrf_url']:
+            # if csrf_url is set, use the same page to collect cookies
+            url = test['csrf_url']
+        else:
+            url = test['url'].split("?", 1)[0] # strip parameters from url where present
+        req_val = urllib2.Request(url, headers=req_headers)
+        response = urllib2.urlopen(req_val)
+        resp_body = response.read()
         if response.info().getheader('Set-Cookie'):
-            cookie_val = response.info().getheader('Set-Cookie') # grab cookies
+            set_cookie = response.info().getheader('Set-Cookie') # grab Set-cookie
+            # work Set-cookie into valid cookies to set
+            bcookie = BaseCookie(set_cookie)
+            # strip off unneeded attributes (e.g. expires, path, HTTPOnly etc...
+            cookie_val = bcookie.output(attrs=[], header="").lstrip()
         else:
             cookie_val = False
-            print "[" + color['red'] + "!" + color['end'] \
+            print " [" + color['red'] + "!" + color['end'] \
                 + "] Set-Cookie Error: No valid Set-Cookie response received"
     else:
         cookie_val = False
 
     # capture CSRF token (using regex from module XML)
     if test['requestCSRF']:
+        user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
+        req_headers = { 'User-Agent' : user_agent }
+        if cookie_val:
+            # if a cookie value exists, use the existing response
+            if opts.debug:
+                print " [" + color['yellow'] + "-" + color['end'] \
+                + "] Using existing response to gather CSRF token"
+        else:
+            # get new response to work with
+            url = test['csrf_url']
+            req_val = urllib2.Request(url, headers=req_headers)
+            response = urllib2.urlopen(req_val)
         try:
-            csrf_regex = re.compile(test['requestCSRF'])
-            match = re.search(csrf_regex, response.read())
+            csrf_regex = re.compile(test['csrf_regex'])
+            match = re.search(csrf_regex, resp_body)
             if match:
                 csrf_val = match.group(1)
             else:
                 csrf_val = False
-                print "[" + color['red'] + "!" + color['end'] \
+                print " [" + color['red'] + "!" + color['end'] \
                     + "] Invalid CSRF regex. Please check parameters"
         except:
-            print "[" + color['red'] + "!" + color['end'] \
+            print " [" + color['red'] + "!" + color['end'] \
                 + "] Invalid CSRF regex. Please check parameters"
-        if opts.debug:
-                print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
-                traceback.print_exc()
+            if opts.debug:
+                    print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
+                    traceback.print_exc()
     else:
         csrf_val = False
 
@@ -676,7 +745,7 @@ def success_check(data, successmatch):
         else:
             return False
     except:
-        print "[" + color['red'] + "!" + color['end'] \
+        print " [" + color['red'] + "!" + color['end'] \
             + "] Invalid in success check. Please check parameter"
         if opts.debug:
             print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
@@ -692,7 +761,7 @@ def negative_check(data, negativematch):
         else:
             return False
     except:
-        print "[" + color['red'] + "!" + color['end'] \
+        print " [" + color['red'] + "!" + color['end'] \
             + "] Invalid in negative check. Please check parameter"
         if opts.debug:
             print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
@@ -704,8 +773,8 @@ def signal_handler(signal, frame):
     # globally signal threads to end
     global sigint
     sigint = True
-  
-    print "\n"
+
+    print
     if not len(success) == 0:
         if opts.summary or (opts.verbose and opts.summary):
             print " [" + color['red'] + "!" + color['end'] \
@@ -719,11 +788,14 @@ def signal_handler(signal, frame):
         opts.outputfile.close()
     os._exit(1)
 
-def query_user(question):
+def query_user(question, default='no'):
     # query user for Y/N response
 
     valid = {"yes":True, "y":True, "no":False, "n":False}
-    prompt = " [y/N] :"
+    if default.lower() == 'yes':
+        prompt = " [ " + color['yellow'] + "Y" + color['end'] + "/n ] :"
+    else:
+        prompt = " [ y/" + color['yellow'] + "N" + color['end'] + " ] :"
 
     while True:
         print question + prompt,
@@ -734,7 +806,10 @@ def query_user(question):
                 + "] Ctrl+C detected... exiting\n"
             sys.exit(0)
         if choice == '':
-            return valid["no"]
+            if default.lower() == 'yes':
+                return valid["yes"]
+            else:
+                return valid["no"]
         elif choice in valid:
             return valid[choice]
         else:
@@ -884,22 +959,39 @@ def setup():
     if opts.threads and opts.account:
         opts.threads = 0 # turn off threads
 
+    # clear category if single module specified
+    if opts.single:
+        opts.category = "single"
+
+    # clear accountfile if account specified at command line
+    if opts.account:
+        opts.accountfile = "none"
+
     # attempt to handle situations where no module or account file is specified
     # skip section if module output is selected
-    if (opts.moduledir == './modules' and opts.accountfile == './accountfile.txt' \
-        and not opts.listmodules and len(sys.argv) < 3) or \
-        (not opts.listmodules and len(sys.argv) < 3) or \
-        (opts.account and len(sys.argv) < 3):
+    if (opts.moduledir == './modules/' and opts.accountfile == './accountfile.txt') \
+        and not opts.listmodules and not opts.account:
+        # accountdir and moduledir are default single/specific account mode not enabled
         print "\t[ ] No command-line options specified"
-        user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
-            +"] Use default locations and load ALL modules? (dangerous)")
+
+        # vary prompts cased on selected options
+        if opts.account:
+            user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+                +"] Test provided account against ALL modules?", 'yes')
+        elif opts.single:
+            user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+                +"] Test usernames in accountfile.txt against the selected module?", 'yes')
+        else:
+            user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+                +"] Test accounts in accountfile.txt against ALL modules? (dangerous)", 'no')
+
         if user_input:
             # continue using defaults
-            print "\t[ ] Continuing using defaults"
+            print "\t[ ] Continuing...."
         else:
-            print "\n",
+            print
             parser.print_help()
-            parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] \
+            parser.exit(0, "\t[" + color['red'] + "!" + color['end'] \
                 +"] Please specify arguments\n")
     display_options()
 
@@ -908,7 +1000,7 @@ def setup():
         if os.path.exists(opts.outputfile):
             # query user to overwrite existing outputfile
             user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
-                +"] Overwrite existing outputfile?")
+                +"] Overwrite existing outputfile?", 'no')
             if user_input:
                 print "\t[ ] Overwriting output file : %s\n" % opts.outputfile
             else:
@@ -918,15 +1010,11 @@ def setup():
         try:
             opts.outputfile = open(opts.outputfile, "w")
         except:
-            print "[" + color['red'] + "!" + color['end'] \
+            print " [" + color['red'] + "!" + color['end'] \
                 + "] Unable to open output file for writing"
             if opts.debug:
                 print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
                 traceback.print_exc()
-
-    # clear category if single module specified
-    if opts.single:
-        opts.category = "single"
 
 def display_options():
     # print out the options being used
@@ -951,7 +1039,7 @@ def display_options():
     if opts.outputfile:
         # get filename based on current path
         file = os.path.realpath(opts.outputfile).replace(os.getcwd(), "")
-        if file.startswith("\\"):
+        if file.startswith("\\") or file.startswith("/"):
             # strip leading \ from file display
             file = file[1:]
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Output :::".ljust(30), \
@@ -985,8 +1073,8 @@ def main():
         +"] tests completed in %.2f seconds" \
         % (time.clock() - startTime)
     if len(success) > 0:
-        print " [" + color['yellow'] + "-" + color['end'] \
-            +"] %d matche(s) found" \
+        print " [" + color['yellow'] + "+" + color['end'] \
+            +"] %d matches found" \
             % len(success)
         output_success()
     else:
