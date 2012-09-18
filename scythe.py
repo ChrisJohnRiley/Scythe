@@ -448,7 +448,7 @@ def request_handler(testcases):
             +"] Throttling in place (%.2f seconds)\n" % opts.wait
     elif opts.threads:
         print " [" + color['yellow'] + "-" + color['end'] \
-            +"] Threading in use (%d threadss)\n" % opts.threads
+            +"] Threading in use (%d threads)\n" % opts.threads
     else:
         print
 
