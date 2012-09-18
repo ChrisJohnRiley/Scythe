@@ -42,14 +42,14 @@ Example Usage:
 
     ./scythe.py --single facebook.com --accountfile=accountfile.txt --threads 4 --summary
 
-> Check account list against all modules in the social category (w/ summary output)
+> Check account list against all modules in the social and blogs categories (w/ summary output)
 
-    ./scythe.py --category=social --accountfile=accountfile.txt --summary
+    ./scythe.py --category=social,blogs --accountfile=accountfile.txt --summary
 
-> Check single account against facebook
+> Check specific accounts against facebook
 
-    ./scythe.py --single facebook.com --account=testuser
-    
+    ./scythe.py --single facebook.com --account=testuser,testuser2
+
 > Check account list against facebook (output to logfile)
 
     ./scythe.py --single facebook.com --accountfile=accountfile.txt --output=logfile.txt
