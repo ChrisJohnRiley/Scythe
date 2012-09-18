@@ -501,11 +501,15 @@ def request_handler(testcases):
                     queue.task_done()
 
         # wait for queue and threads to end before continuing
-        while not sigint:
-            queue.join()
+        while activeCount() > 1:
+            # keep main program active to catch keyboard interrupts
+            time.sleep(0.1)
 
         for thread in threads:
             thread.join()
+
+        # no more active threads. resolve queue
+        queue.join()
 
     else:
         for test in testcases:
@@ -537,142 +541,141 @@ def progressbar(progress, total):
                     % ((color['yellow'] + ("#"*(progress_percentage / 10)) + \
                     color['end']).ljust(10, "."),progress_percentage),
 
-def make_request(test, retry=False, wait_time=False):
+def make_request(test, retry=0, wait_time=False):
     # make request and add output to array
 
-    if not sigint:
-        # set threadname
-        if not current_thread().name == 'MainThread':
-            threadname = "[" + current_thread().name +"]"
-        else:
-            # return blank string when not using threading
-            threadname = ''
+    # set threadname
+    if not current_thread().name == 'MainThread':
+        threadname = "[" + current_thread().name +"]"
+    else:
+        # return blank string when not using threading
+        threadname = ''
 
-        # GET method worker
-        if test['method'] == 'GET':
-            test, resp, r_info, req = get_request(test)
+    # GET method worker
+    if test['method'] == 'GET':
+        test, resp, r_info, req = get_request(test)
 
-            # set retry counter to 0
-            retry = 0
+        # success match
+        if resp and test['successmatch']:
+            matched = success_check(resp, test['successmatch'])
+            if matched:
+                print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
+                    % (test['account'], test['name'])
+                success.append(test)
+                if opts.debug:
+                    print # spacing forverbose output
+                if opts.outputfile:
+                    # log to outputfile
+                    opts.outputfile.write("Account " + test['account'] + " exists on " \
+                        + test['name'] +"\n")
 
-            # success match
-            if resp and test['successmatch']:
-                matched = success_check(resp, test['successmatch'])
-                if matched:
-                    print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
-                        % (test['account'], test['name'])
-                    success.append(test)
-                    if opts.debug:
-                        print # spacing forverbose output
-                    if opts.outputfile:
-                        # log to outputfile
-                        opts.outputfile.write("Account " + test['account'] + " exists on " \
-                            + test['name'] +"\n")
+        # error match
+        if resp and test['errormatch']:
+            error = error_check(resp, test['errormatch'])
+            if error and retry >= opts.retries:
+                print " [" + color['red'] + "!" + color['end'] + \
+                    "] %s Retries exceeded when testing account %s on %s" \
+                    % (threadname, test['account'], test['name'])
 
-            # error match
-            if resp and test['errormatch']:
-                error = error_check(resp, test['errormatch'])
-                if error and retry >= opts.retries:
-                    print " [" + color['red'] + "!" + color['end'] + \
-                        "] %s Retries exceeded when testing account %s on %s" \
-                        % (threadname, test['account'], test['name'])
-                elif error:
-                    print " [" + color['yellow'] + "!" + color['end'] + \
-                        "] %s Error detected when testing account %s on %s" \
-                        % (threadname, test['account'], test['name'])
-                    # wait X seconds and retry
-                    if wait_time:
-                        # double existing wait_time
-                        wait_time = wait_time * 2
-                    else:
-                        # set starting point for wait_time
-                        wait_time = opts.retrytime
-                    if opts.verbose:
-                        print " [ ] %s Waiting %d seconds before retry" \
-                            % (threadname, wait_time)
-                    time.sleep(wait_time)
-                    # increment retry counter
-                    retry = retry + 1
-                    if opts.verbose:
-                        print " [ ] %s Attempting retry (%d of %d)" \
-                            % (threadname, retry, opts.retries)
-                    make_request(test, retry, wait_time)
+            elif error:
+                print " [" + color['yellow'] + "!" + color['end'] + \
+                    "] %s Error detected when testing account %s on %s" \
+                    % (threadname, test['account'], test['name'])
+                # wait X seconds and retry
+                if wait_time:
+                    # double existing wait_time
+                    wait_time = wait_time * 2
+                else:
+                    # set starting point for wait_time
+                    wait_time = opts.retrytime
+                if opts.verbose:
+                    print " [ ] %s Waiting %d seconds before retry" \
+                        % (threadname, wait_time)
+                time.sleep(wait_time)
+                # increment retry counter
+                retry = retry + 1
+                if opts.verbose:
+                    print " [ ] %s Attempting retry (%d of %d)" \
+                        % (threadname, retry, opts.retries)
+                make_request(test, retry, wait_time)
+                return
 
-            # negative match
-            if resp and test['negativematch']:
-                matched = negative_check(resp, test['negativematch'])
-                if matched and opts.verbose:
-                    print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
-                        % (test['account'], test['name'])
-            # advance debug output
-            if resp and opts.debug == 'advanced':
-                debug_save_response(test, resp, r_info, req)
-            return
+        # negative match
+        if resp and test['negativematch']:
+            matched = negative_check(resp, test['negativematch'])
+            if matched and opts.verbose:
+                print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
+                    % (test['account'], test['name'])
 
-        # POST method worker
-        elif test['method'] == 'POST':
-            test, resp, r_info, req = post_request(test)
+        # advance debug output
+        if resp and opts.debug == 'advanced':
+            debug_save_response(test, resp, r_info, req)
 
-            # set retry counter to 0
-            retry = 0
+        return
 
-            # success match
-            if resp and test['successmatch']:
-                matched = success_check(resp, test['successmatch'])
-                if matched:
-                    print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
-                        % (test['account'], test['name'])
-                    success.append(test)
-                    if opts.debug:
-                        print # spacing forverbose output
-                    if opts.outputfile:
-                        # log to outputfile
-                        opts.outputfile.write("Account " + test['account'] + " exists on " \
-                            + test['name'] +"\n")
+    # POST method worker
+    elif test['method'] == 'POST':
+        test, resp, r_info, req = post_request(test)
 
-            # error match
-            if resp and test['errormatch']:
-                error = error_check(resp, test['errormatch'])
-                if error and retry >= opts.retries:
-                    print " [" + color['red'] + "!" + color['end'] + \
-                        "] %s Retries exceeded when testing account %s on %s" \
-                        % (threadname, test['account'], test['name'])
-                elif error:
-                    print " [" + color['yellow'] + "!" + color['end'] + \
-                        "] %s Error detected when testing account %s on %s" \
-                        % (threadname, test['account'], test['name'])
-                    # wait X seconds and retry
-                    if wait_time:
-                        # double existing wait_time
-                        wait_time = wait_time * 2
-                    else:
-                        # set starting point for wait_time
-                        wait_time = opts.retrytime
-                    if opts.verbose:
-                        print " [ ] %s Waiting %d seconds before retry" \
-                            % (threadname, wait_time)
-                    time.sleep(wait_time)
-                    # increment retry counter
-                    retry = retry + 1
-                    if opts.verbose:
-                        print " [ ] %s Attempting retry (%d of %d)" \
-                            % (threadname, retry, opts.retries)
-                    make_request(test, retry, wait_time)
+        # success match
+        if resp and test['successmatch']:
+            matched = success_check(resp, test['successmatch'])
+            if matched:
+                print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
+                    % (test['account'], test['name'])
+                success.append(test)
+                if opts.debug:
+                    print # spacing forverbose output
+                if opts.outputfile:
+                    # log to outputfile
+                    opts.outputfile.write("Account " + test['account'] + " exists on " \
+                        + test['name'] +"\n")
 
-            # negative match
-            if resp and test['negativematch']:
-                matched = negative_check(resp, test['negativematch'])
-                if matched and opts.verbose:
-                    print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
-                        % (test['account'], test['name'])
-            if resp and opts.debug == 'advanced':
-                debug_save_response(test, resp, r_info, req)
-            return
+        # error match
+        if resp and test['errormatch']:
+            error = error_check(resp, test['errormatch'])
+            if error and retry >= opts.retries:
+                print " [" + color['red'] + "!" + color['end'] + \
+                    "] %s Retries exceeded when testing account %s on %s" \
+                    % (threadname, test['account'], test['name'])
+            elif error:
+                print " [" + color['yellow'] + "!" + color['end'] + \
+                    "] %s Error detected when testing account %s on %s" \
+                    % (threadname, test['account'], test['name'])
+                # wait X seconds and retry
+                if wait_time:
+                    # double existing wait_time
+                    wait_time = wait_time * 2
+                else:
+                    # set starting point for wait_time
+                    wait_time = opts.retrytime
+                if opts.verbose:
+                    print " [ ] %s Waiting %d seconds before retry" \
+                        % (threadname, wait_time)
+                time.sleep(wait_time)
+                # increment retry counter
+                retry = retry + 1
+                if opts.verbose:
+                    print " [ ] %s Attempting retry (%d of %d)" \
+                        % (threadname, retry, opts.retries)
+                make_request(test, retry, wait_time)
 
-        else:
-            print " [" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" \
-                % test['method'], test['url']
-            return
+        # negative match
+        if resp and test['negativematch']:
+            matched = negative_check(resp, test['negativematch'])
+            if matched and opts.verbose:
+                print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
+                    % (test['account'], test['name'])
+
+        if resp and opts.debug == 'advanced':
+            debug_save_response(test, resp, r_info, req)
+
+        return
+
+    else:
+        print " [" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" \
+            % test['method'], test['url']
+        return
 
 def get_request(test):
     # perform GET request
