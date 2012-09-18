@@ -1,7 +1,7 @@
 <!-- github.com - User registration check -->
 <module>
     <site>
-        <name>Github.com</name>
+        <name>Github.com (username)</name>
         <url><![CDATA[https://github.com/signup_check/username]]></url>
         <method>POST</method>
         <postParameters><![CDATA[value=<ACCOUNT>]]></postParameters>

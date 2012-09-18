@@ -46,7 +46,7 @@ import Queue
 from Cookie import BaseCookie
 from threading import Thread, activeCount, Lock
 from random import Random
-from optparse import OptionParser, SUPPRESS_HELP
+from optparse import OptionParser, OptionGroup, SUPPRESS_HELP
 from array import *
 from xml.dom.minidom import parse
 
@@ -216,19 +216,21 @@ def extract_module_data(file, module_dom):
                 xmlData['category'] = 'unspecified'
 
             # filter modules based on selected categories
-            if xmlData['category'].lower() in opts.category.lower() or \
-                opts.category.lower() == "all" or \
+            if xmlData['category'].lower() in (cat.lower() for cat in opts.category) or \
+                "all" in (cat.lower() for cat in opts.category) or \
                 (opts.single.lower() and opts.single.lower() in xmlData['name'].lower()) or \
                 (file.lower() in opts.single.lower()):
                 if xmlData['category'].lower() == "example" and \
-                    ("example" not in opts.category.lower() and not opts.single):
+                    ("example" not in (cat.lower() for cat in opts.category) \
+                    and not opts.single):
                     # skip example module when running with all or default settings
                     if opts.verbose:
                         print "\t[" + color['red'] + "!" + color['end'] \
                             + "] Skipping example module : %s" % xmlData['name']
                 else:
                     print "\t[" + color['yellow'] + "+" + color['end'] \
-                        +"] Extracted module information from %s" % xmlData['name']
+                        +"] Extracted module information from %s" \
+                        % xmlData['name']
                     modules.append(xmlData)
             else:
                 if opts.verbose:
@@ -236,9 +238,9 @@ def extract_module_data(file, module_dom):
                         + "] Skipping module %s. Not in category (%s)" \
                         % (xmlData['name'], opts.category)
 
-        except Exception, e:
+        except Exception, ex:
             print "\t[" + color['red'] + "!" + color['end'] \
-                + "] Failed to extracted module information\n\t\tError: %s" % e
+                + "] Failed to extracted module information\n\t\tError: %s" % ex
             if opts.debug:
                 print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
                 traceback.print_exc()
@@ -339,6 +341,13 @@ def load_modules():
     # load the modules from moduledir
     # only XML files are permitted
 
+    if not "all" in (cat.lower() for cat in opts.category):
+    # using options from command line
+        if opts.verbose:
+            print " [" + color['yellow'] + "-" + color['end'] \
+                + "] using command line supplied category : %s" \
+                % ", ".join(opts.category)
+
     for (path, dirs, files) in os.walk(opts.moduledir):
         for d in dirs:
            if d.startswith("."): # ignore hidden . dirctories
@@ -370,14 +379,18 @@ def load_accounts():
     # load account from command line
         if opts.verbose:
             print " [" + color['yellow'] + "-" + color['end'] \
-                + "] using command line supplied user : %s" % opts.account
-        accounts.append(opts.account)
+                + "] using command line supplied user(s) : %s" \
+                % ", ".join(opts.account)
+        for a in opts.account:
+            # add all command line accounts to array for testcases
+            accounts.append(a)
 
     else:
     # load accounts from file if it exists
         if not os.path.exists(opts.accountfile):
             print "\n [" + color['red'] + "!" + color['end'] \
-                + "] The supplied file  (%s) does not exist!" % opts.accountfile
+                + "] The supplied file  (%s) does not exist!" \
+                % opts.accountfile
             sys.exit(0)
         account_file = open(opts.accountfile, 'r')
         account_read = account_file.readlines()
@@ -520,6 +533,8 @@ def make_request(test):
                 print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
                     % (test['account'], test['name'])
                 success.append(test)
+                if opts.debug:
+                    print # spacing forverbose output
                 if opts.outputfile:
                     # log to outputfile
                     opts.outputfile.write("Account " + test['account'] + " exists on " \
@@ -540,6 +555,8 @@ def make_request(test):
                 print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
                     % (test['account'], test['name'])
                 success.append(test)
+                if opts.debug:
+                    print # spacing forverbose output
                 if opts.outputfile:
                     # log to outputfile
                     opts.outputfile.write("Account " + test['account'] + " exists on " \
@@ -584,6 +601,7 @@ def get_request(test):
             # print debug output
             print textwrap.fill((" [ ] URL (GET): %s" % test['url']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
+            print
 
         # assign NullHTTPErrorProcessor as default opener
         opener = urllib2.build_opener(NullHTTPErrorProcessor())
@@ -636,7 +654,6 @@ def post_request(test):
 
         if opts.debug:
             # print debug output
-            print
             print textwrap.fill((" [ ] URL (POST): %s" % test['url']),
                 initial_indent='', subsequent_indent='  -> ', width=80)
             print textwrap.fill((" [ ] POST PARAMETERS: %s" % test['postParameters']),
@@ -823,92 +840,132 @@ def setup():
 
     global opts
     parser = OptionParser(version="%prog version ::: " + __version__, epilog="\n")
-    parser.add_option(
+
+    # account options grouping
+    group = OptionGroup(parser, "::: Account Options ::")
+    group.add_option(
         "-a", "--accountfile",
         dest="accountfile",
         default="./accountfile.txt",
-        help="Location of the accounts FILE - 1 account per line",
+        help="Location of the accounts FILE (1 account per line)",
         metavar="FILE"
         )
-    parser.add_option(
+    group.add_option(
         "-u", "--account",
         dest="account",
-        default="",
-        help="Specify a single account on the command line",
+        default=[],
+        action="append",
+        help="Account(s) to check (comma seperated, no spaces)",
         metavar="STRING"
         )
-    parser.add_option(
-        "-m", "--moduledir",
-        dest="moduledir",
-        default="./modules/",
-        help="Location of the modules directory",
-        metavar="STRING"
-        )
-    parser.add_option(
+    parser.add_option_group(group)
+
+    # module options grouping
+    group = OptionGroup(parser, "::: Module Options ::")
+    group.add_option(
         "-l", "--list",
         action="store_true",
         dest="listmodules",
         default=False,
         help="List module names and categories",
         )
-    parser.add_option(
-        "-c", "--category",
-        dest="category",
-        default="all",
-        help="Restrict modules based on category (comma seperated)",
-        metavar="STRING"
+    group.add_option(
+        "-m", "--moduledir",
+        dest="moduledir",
+        default="./modules/",
+        help="Location of the modules directory",
+        metavar="DIR"
         )
-    parser.add_option(
+    group.add_option(
         "-s", "--single",
         dest="single",
         default="",
-        help="Restrict to specific module name (name from XML)",
-        metavar="STRING"
+        help="Restrict to specific module name (XML NAME or filename)",
+        metavar="MODULE"
         )
-    parser.add_option(
+    group.add_option(
+        "-c", "--category",
+        dest="category",
+        default=[],
+        action="append",
+        help="Restrict modules based on category (comma seperated, no spaces)"
+        )
+    parser.add_option_group(group)
+
+    # timing options grouping
+    group = OptionGroup(parser, "::: Timing Options ::")
+    group.add_option(
         "-t", "--threads",
         dest="threads",
         default=0,
-        help="Enable threading. Specify number of threads",
+        help="Enable threading. Specify max # of threads",
         metavar="INT",
         type="int"
         )
-    parser.add_option(
+    group.add_option(
+        "-w", "--wait",
+        dest="wait",
+        default=False,
+        help="Throttle tests (e.g. -w 0.5 for 0.5 second delay)",
+        type="float",
+        metavar="SECS"
+        )
+    parser.add_option_group(group)
+
+    # output options grouping
+    group = OptionGroup(parser, "::: Output Options ::")
+    group.add_option(
         "--summary",
         action="store_true",
         dest="summary",
         default=False,
-        help="Show detailed summary at the end",
+        help="Show detailed summary before closing",
         )
-    parser.add_option(
+    group.add_option(
         "-o", "--output",
         dest="outputfile",
         default=False,
         help="Output results to a file as well as screen",
         metavar="FILE"
         )
-    parser.add_option(
-        "-w", "--wait",
-        dest="wait",
-        default=False,
-        help="Throttle tests (e.g. -t 0.5 for 0.5 second wait between checks",
-        type="float",
-        metavar="SECONDS"
-        )
-    parser.add_option(
+    parser.add_option_group(group)
+
+    # debug options grouping
+    group = OptionGroup(parser, "Debug Options")
+    group.add_option(
         "-v", "--verbose",
         action="count",
         dest="verbose",
-        help="Print verbose messages to stdout (-v -v for debug output)"
+        help="Print verbose messages to stdout (-v -v for debug)"
         )
-    parser.add_option(
+    group.add_option(
         "-?",
         action="store_true",
         dest="question",
         default=False,
         help=SUPPRESS_HELP
         ) # hidden -? handling
+    parser.add_option_group(group)
     (opts, args) = parser.parse_args()
+
+    # the following section reworks options as required
+
+    # split multiple account names into flat list
+    if opts.account:
+        acc_split = []
+        for a in opts.account:
+             acc_split.append(a.split(','))
+        opts.account = sum(acc_split, [])
+
+    # split multiple categories into flat list
+    if opts.category:
+        cat_split = []
+        for c in opts.category:
+             cat_split.append(c.split(','))
+        opts.category = sum(cat_split, [])
+    else:
+        # default to all categories
+        opts.category = ['all']
 
     # handle help output
     if opts.question: # print help on -? also
@@ -967,33 +1024,48 @@ def setup():
     if opts.account:
         opts.accountfile = "none"
 
+    # display selected options for the user
+    display_options()
+
+    # default user_input for cases where none is required
+    user_input = "none"
+
     # attempt to handle situations where no module or account file is specified
     # skip section if module output is selected
     if (opts.moduledir == './modules/' and opts.accountfile == './accountfile.txt') \
-        and not opts.listmodules and not opts.account:
+        and not opts.listmodules and not opts.account and \
+        "all" in (cat.lower() for cat in opts.category):
         # accountdir and moduledir are default single/specific account mode not enabled
         print "\t[ ] No command-line options specified"
+        # prompt user as this could be dangerous
+        user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+            +"] Test accounts in accountfile.txt against ALL modules? (dangerous)", 'no')
 
-        # vary prompts cased on selected options
-        if opts.account:
-            user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
-                +"] Test provided account against ALL modules?", 'yes')
-        elif opts.single:
-            user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
-                +"] Test usernames in accountfile.txt against the selected module?", 'yes')
-        else:
-            user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
-                +"] Test accounts in accountfile.txt against ALL modules? (dangerous)", 'no')
+    # vary prompts cased on selected options
+    # case: account(s) specified but modules not set
+    elif opts.account and opts.moduledir == './modules/' and \
+        not opts.single and "all" in (cat.lower() for cat in opts.category):
+        user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+            +"] Test provided account(s) against ALL modules?", 'yes')
+    # case: module set but accountfile left at default
+    elif opts.single and opts.accountfile == './accountfile.txt':
+        user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+            +"] Test usernames in accountfile.txt against the selected module?", 'yes')
+    # case: category set but accountfile left at default
+    elif opts.category and opts.accountfile == './accountfile.txt':
+        user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
+            +"] Test accounts in accountfile.txt against selected category?", 'yes')
 
-        if user_input:
-            # continue using defaults
+    # handle user_input
+    if user_input:
+        # continue using defaults
+        if not user_input == "none":
             print "\t[ ] Continuing...."
-        else:
-            print
-            parser.print_help()
-            parser.exit(0, "\t[" + color['red'] + "!" + color['end'] \
-                +"] Please specify arguments\n")
-    display_options()
+    else:
+        print
+        parser.print_help()
+        parser.exit(0, "\t[" + color['red'] + "!" + color['end'] \
+            +"] Please specify arguments\n")
 
     # check if outputfile exists already and prompt to overwrite
     if opts.outputfile:
@@ -1024,13 +1096,13 @@ def display_options():
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Account File :::".ljust(30), \
             str(opts.accountfile).ljust(40)
     else:
-        print "\t[" + color['yellow'] + "-" + color['end'] +"] Single Account :::".ljust(30), \
-            str(opts.account).ljust(40)
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Account(s) :::".ljust(30), \
+            ", ".join(opts.account).ljust(40)
     print "\t[" + color['yellow'] + "-" + color['end'] +"] Module Directory :::".ljust(30), \
         str(opts.moduledir).ljust(40)
     if not opts.single:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Categories :::".ljust(30), \
-            str(opts.category).ljust(40)
+            ", ".join(opts.category).ljust(40)
     else:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Single Module :::".ljust(30), \
         str(opts.single).ljust(40)

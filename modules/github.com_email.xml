@@ -1,7 +1,11 @@
-<!-- github.com - Email registration check -->
+<!-- github.com - Email registration check
+
+Note: due to the way this module works, invlaid email addresses may
+appear as matches
+-->
 <module>
     <site>
-        <name>Github.com</name>
+        <name>Github.com (Email)</name>
         <url><![CDATA[https://github.com/signup_check/email]]></url>
         <method>POST</method>
         <postParameters><![CDATA[value=<ACCOUNT>]]></postParameters>
@@ -13,8 +17,8 @@
         </requestCSRF>
         <successmatch>Email is invalid or already taken</successmatch>
         <negativematch></negativematch>
-        <date>15/09/2012</date>
-        <version>1</version>
+        <date>16/09/2012</date>
+        <version>2</version>
         <author>CJR</author>
         <category>development</category>
     </site>
