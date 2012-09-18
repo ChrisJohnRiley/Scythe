@@ -455,6 +455,7 @@ def request_handler(testcases):
     progress = 0 # initiate progress count
 
     if opts.threads > 1:
+        threads = []
         for test in testcases:
             # add testcases to queue
             queue.put(test)
@@ -474,6 +475,7 @@ def request_handler(testcases):
                 try:
                     # setup thread to perform test
                     t = Thread(target=make_request, args=(test,))
+                    threads.append(t)
                     t.start()
                 finally:
                     # iterate progress value for the progress bar
@@ -489,8 +491,9 @@ def request_handler(testcases):
 
         # wait for queue and threads to end before continuing
         queue.join()
-        while activeCount()>1:
-            time.sleep(1)
+
+        for thread in threads:
+            thread.join()
 
     else:
         for test in testcases:
