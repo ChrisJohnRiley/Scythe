@@ -41,6 +41,7 @@ import string
 import textwrap
 import sys
 import traceback
+import datetime
 import time
 import Queue
 from Cookie import BaseCookie
@@ -90,7 +91,6 @@ def logo():
 def extract_module_data(file, module_dom):
     # extract module information from the provided dom
 
-    print
     for each in module_dom:
         try:
             xmlData = {}
@@ -233,7 +233,7 @@ def extract_module_data(file, module_dom):
                         % xmlData['name']
                     modules.append(xmlData)
             else:
-                if opts.verbose:
+                if opts.debug:
                     print "\t[" + color['red'] + "!" + color['end'] \
                         + "] Skipping module %s. Not in category (%s)" \
                         % (xmlData['name'], opts.category)
@@ -359,11 +359,12 @@ def load_modules():
                 path = path + '/'
             # read in modules
             if file.endswith('.xml') and not file.startswith('.'):
-                print "\t[ ] Checking module : %s" % file,
+                if opts.verbose:
+                    print "\t[ ] Checking module : %s" % file
                 module_dom = parse(path + file)
                 module_dom = module_dom.getElementsByTagName('site')
                 extract_module_data(file, module_dom)
-            elif opts.verbose:
+            elif opts.debug:
                 print "\t[" + color['red'] + "!" + color['end'] \
                     + "] Skipping non-XML file : %s" % file
 
@@ -526,7 +527,7 @@ def make_request(test):
 
     # GET method worker
     if test['method'] == 'GET':
-        test, resp = get_request(test)
+        test, resp, r_info, req = get_request(test)
         if resp and test['successmatch']:
             matched = success_check(resp, test['successmatch'])
             if matched:
@@ -544,11 +545,14 @@ def make_request(test):
             if matched and opts.verbose:
                 print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
                     % (test['account'], test['name'])
+        # advance debug output
+        if resp and opts.debug == 'advanced':
+            debug_save_response(test, resp, r_info, req)
         return
 
     # POST method worker
     elif test['method'] == 'POST':
-        test, resp = post_request(test)
+        test, resp, r_info, req = post_request(test)
         if resp and test['successmatch']:
             matched = success_check(resp, test['successmatch'])
             if matched:
@@ -566,6 +570,8 @@ def make_request(test):
             if matched and opts.verbose:
                 print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
                     % (test['account'], test['name'])
+        if resp and opts.debug == 'advanced':
+            debug_save_response(test, resp, r_info, req)
         return
 
     else:
@@ -609,11 +615,12 @@ def get_request(test):
 
         req = urllib2.Request(test['url'], headers=req_headers)
         f = urllib2.urlopen(req)
-        resp = f.read()
+        r_body = f.read()
+        r_info = f.info()
         f.close()
 
         # returned updated test and response data
-        return test, resp
+        return test, r_body, r_info, req
 
     except Exception:
         print textwrap.fill((" [" + color['red'] + "!" + color['end'] + "] Error contacting %s" \
@@ -666,11 +673,12 @@ def post_request(test):
 
         req = urllib2.Request(test['url'], test['postParameters'], req_headers)
         f = urllib2.urlopen(req)
-        resp = f.read()
+        r_body = f.read()
+        r_info = f.info()
         f.close()
 
         # returned updated test and response data
-        return test, resp
+        return test, r_body, r_info, req
 
     except Exception:
         print textwrap.fill((" [" + color['red'] + "!" + color['end'] + "] Error contacting %s" \
@@ -783,6 +791,51 @@ def negative_check(data, negativematch):
         if opts.debug:
             print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
             traceback.print_exc()
+
+def debug_save_response(test, resp, r_info, req):
+    # save advanced deug responses to ./debug/
+
+    print " ------------------------------------------------------------------------------"
+    print " [" + color['red'] + "!" + color['end'] + "] Debug response from %s" % test['url']
+
+    # get time to attach to filename
+    time = int(datetime.datetime.now().strftime("%s")) * 1000
+    # set testname, remove spaces
+    testname = test['name'].replace(" ", "_")
+
+    # check debug directory exists, if not create it
+    if not os.path.exists('./debug/'):
+        os.makedirs('./debug/')
+
+    # filename for html and headers
+    htmlfile = './debug/' + testname + str(time) + '.html'
+    hdrfile = './debug/' + testname + str(time) + '.headers'
+
+    # format headers
+    header_output = []
+    header_output.append('---------------------\nrequest headers\n---------------------\n')
+    for key in req.headers:
+        header_output.append(key + ': ' + req.headers[key])
+
+    header_output.append('\n---------------------\nresponse headers\n---------------------\n')
+    for each in r_info.headers:
+        header_output.append(each.rstrip())
+    header_output.append('\n')
+
+    # open file for writing
+    f_html = open(htmlfile, 'w')
+    f_headers = open(hdrfile, 'w')
+
+    # write response and close
+    f_html.write(resp)
+    f_html.close()
+
+    # write headers and close
+    f_headers.write("\n".join(header_output))
+    f_headers.close()
+
+    print " [" + color['red'] + "!" + color['end'] + "]  Saved debug output to %s" % htmlfile
+    print " ------------------------------------------------------------------------------\n"
 
 def signal_handler(signal, frame):
     # handle CTRL + C events
@@ -979,6 +1032,13 @@ def setup():
     elif opts.verbose == 1:
         opts.verbose = True
         opts.debug = False
+    elif opts.verbose == 2:
+        opts.verbose = True
+        opts.debug = True
+    elif opts.verbose == 3:
+        opts.verbose = True
+        # enabled advanced debugging - not recommended
+        opts.debug = 'advanced'
     else:
         opts.verbose = True
         opts.debug = True
@@ -1011,10 +1071,6 @@ def setup():
         parser.print_help()
         parser.exit(0, "\n\t[" + color['red'] + "!" + color['end'] \
                 +"] Please don't set throttling (wait) AND threading!\n")
-
-    # disable threads if --acount specified at the command line
-    if opts.threads and opts.account:
-        opts.threads = 0 # turn off threads
 
     # clear category if single module specified
     if opts.single:
@@ -1100,14 +1156,25 @@ def display_options():
             ", ".join(opts.account).ljust(40)
     print "\t[" + color['yellow'] + "-" + color['end'] +"] Module Directory :::".ljust(30), \
         str(opts.moduledir).ljust(40)
+
     if not opts.single:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Categories :::".ljust(30), \
             ", ".join(opts.category).ljust(40)
     else:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Single Module :::".ljust(30), \
-        str(opts.single).ljust(40)
-    print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
-        str(opts.verbose).ljust(40)
+            str(opts.single).ljust(40)
+
+    # display debug level
+    if opts.debug == 'advanced':
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
+            "advanced debugging".ljust(40)
+    elif opts.debug:
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
+            "debug".ljust(40)
+    else:
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
+            "verbose".ljust(40)
+
     if opts.outputfile:
         # get filename based on current path
         file = os.path.realpath(opts.outputfile).replace(os.getcwd(), "")
