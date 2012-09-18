@@ -10,6 +10,7 @@
         <requestCSRF>False</requestCSRF>
         <successmatch>The password you entered for the email or username</successmatch>
         <negativematch>Invalid email or username</negativematch>
+        <errormatch>You have exceeded the login limit</errormatch>
         <date>13/09/2012</date>
         <version>2</version>
         <author>CJR</author>

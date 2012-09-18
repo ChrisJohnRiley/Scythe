@@ -45,7 +45,7 @@ import datetime
 import time
 import Queue
 from Cookie import BaseCookie
-from threading import Thread, activeCount, Lock
+from threading import Thread, activeCount, Lock, current_thread
 from random import Random
 from optparse import OptionParser, OptionGroup, SUPPRESS_HELP
 from array import *
@@ -183,13 +183,24 @@ def extract_module_data(file, module_dom):
             # set negative match if specified in the module XML
             try:
                 # handle instances where people enter False insterad of leaving this field blank
-                if each.getElementsByTagName('negativematch')[0].lower() == 'false':
+                if each.getElementsByTagName('negativematch')[0].firstChild.nodeValue.lower() == 'false':
                     xmlData['negativematch'] = ''
                 else:
                     xmlData['negativematch'] = \
                         each.getElementsByTagName('negativematch')[0].firstChild.nodeValue
             except (IndexError, AttributeError):
                 xmlData['negativematch'] = ''
+
+            # set error match if specified in the module XML
+            try:
+                # handle instances where people enter False insterad of leaving this field blank
+                if each.getElementsByTagName('errormatch')[0].firstChild.nodeValue.lower() == 'false':
+                    xmlData['errormatch'] = ''
+                else:
+                    xmlData['errormatch'] = \
+                        each.getElementsByTagName('errormatch')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
+                xmlData['errormatch'] = ''
 
             # set module date
             try:
@@ -272,6 +283,8 @@ def output_modules():
             print textwrap.fill((" SUCCESS MATCH: %s" % mod['successmatch']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" NEGATIVE MATCH: %s" % mod['negativematch']),
+                initial_indent='', subsequent_indent=' -> ', width=80)
+            print textwrap.fill((" ERROR MATCH: %s" % mod['errormatch']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" DATE: %s" % mod['date']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
@@ -428,6 +441,7 @@ def create_testcases():
             tempcase['csrf_regex'] = m['csrf_regex']
             tempcase['successmatch'] = m['successmatch']
             tempcase['negativematch'] = m['negativematch']
+            tempcase['errormatch'] = m['errormatch']
             testcases.append(tempcase)
             tempcase = {}
 
@@ -448,7 +462,7 @@ def request_handler(testcases):
             +"] Throttling in place (%.2f seconds)\n" % opts.wait
     elif opts.threads:
         print " [" + color['yellow'] + "-" + color['end'] \
-            +"] Threading in use (%d threads)\n" % opts.threads
+            +"] Threading in use (%d threads max)\n" % opts.threads
     else:
         print
 
@@ -463,18 +477,15 @@ def request_handler(testcases):
         # create progress update lock
         progress_lock = Lock()
 
-        while not queue.empty():
-            if sigint: # check for CTRL+C and break
-                break
-            elif opts.threads > activeCount():
-                # only allow a limited number of threads
-                if sigint: # check for CTRL+C and break
-                    break
+        while not queue.empty() and not sigint:
+            # only allow a limited number of threads
+            if opts.threads >= activeCount() and not sigint:
                 # get next test from queue
                 test = queue.get()
                 try:
                     # setup thread to perform test
                     t = Thread(target=make_request, args=(test,))
+                    t.daemon=True
                     threads.append(t)
                     t.start()
                 finally:
@@ -490,7 +501,8 @@ def request_handler(testcases):
                     queue.task_done()
 
         # wait for queue and threads to end before continuing
-        queue.join()
+        while not sigint:
+            queue.join()
 
         for thread in threads:
             thread.join()
@@ -525,62 +537,142 @@ def progressbar(progress, total):
                     % ((color['yellow'] + ("#"*(progress_percentage / 10)) + \
                     color['end']).ljust(10, "."),progress_percentage),
 
-def make_request(test):
+def make_request(test, retry=False, wait_time=False):
     # make request and add output to array
 
-    # GET method worker
-    if test['method'] == 'GET':
-        test, resp, r_info, req = get_request(test)
-        if resp and test['successmatch']:
-            matched = success_check(resp, test['successmatch'])
-            if matched:
-                print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
-                    % (test['account'], test['name'])
-                success.append(test)
-                if opts.debug:
-                    print # spacing forverbose output
-                if opts.outputfile:
-                    # log to outputfile
-                    opts.outputfile.write("Account " + test['account'] + " exists on " \
-                        + test['name'] +"\n")
-        if resp and test['negativematch']:
-            matched = negative_check(resp, test['negativematch'])
-            if matched and opts.verbose:
-                print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
-                    % (test['account'], test['name'])
-        # advance debug output
-        if resp and opts.debug == 'advanced':
-            debug_save_response(test, resp, r_info, req)
-        return
+    if not sigint:
+        # set threadname
+        if not current_thread().name == 'MainThread':
+            threadname = "[" + current_thread().name +"]"
+        else:
+            # return blank string when not using threading
+            threadname = ''
 
-    # POST method worker
-    elif test['method'] == 'POST':
-        test, resp, r_info, req = post_request(test)
-        if resp and test['successmatch']:
-            matched = success_check(resp, test['successmatch'])
-            if matched:
-                print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
-                    % (test['account'], test['name'])
-                success.append(test)
-                if opts.debug:
-                    print # spacing forverbose output
-                if opts.outputfile:
-                    # log to outputfile
-                    opts.outputfile.write("Account " + test['account'] + " exists on " \
-                        + test['name'] +"\n")
-        if resp and test['negativematch']:
-            matched = negative_check(resp, test['negativematch'])
-            if matched and opts.verbose:
-                print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
-                    % (test['account'], test['name'])
-        if resp and opts.debug == 'advanced':
-            debug_save_response(test, resp, r_info, req)
-        return
+        # GET method worker
+        if test['method'] == 'GET':
+            test, resp, r_info, req = get_request(test)
 
-    else:
-        print " [" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" \
-            % test['method'], test['url']
-        return
+            # set retry counter to 0
+            retry = 0
+
+            # success match
+            if resp and test['successmatch']:
+                matched = success_check(resp, test['successmatch'])
+                if matched:
+                    print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
+                        % (test['account'], test['name'])
+                    success.append(test)
+                    if opts.debug:
+                        print # spacing forverbose output
+                    if opts.outputfile:
+                        # log to outputfile
+                        opts.outputfile.write("Account " + test['account'] + " exists on " \
+                            + test['name'] +"\n")
+
+            # error match
+            if resp and test['errormatch']:
+                error = error_check(resp, test['errormatch'])
+                if error and retry >= opts.retries:
+                    print " [" + color['red'] + "!" + color['end'] + \
+                        "] %s Retries exceeded when testing account %s on %s" \
+                        % (threadname, test['account'], test['name'])
+                elif error:
+                    print " [" + color['yellow'] + "!" + color['end'] + \
+                        "] %s Error detected when testing account %s on %s" \
+                        % (threadname, test['account'], test['name'])
+                    # wait X seconds and retry
+                    if wait_time:
+                        # double existing wait_time
+                        wait_time = wait_time * 2
+                    else:
+                        # set starting point for wait_time
+                        wait_time = opts.retrytime
+                    if opts.verbose:
+                        print " [ ] %s Waiting %d seconds before retry" \
+                            % (threadname, wait_time)
+                    time.sleep(wait_time)
+                    # increment retry counter
+                    retry = retry + 1
+                    if opts.verbose:
+                        print " [ ] %s Attempting retry (%d of %d)" \
+                            % (threadname, retry, opts.retries)
+                    make_request(test, retry, wait_time)
+
+            # negative match
+            if resp and test['negativematch']:
+                matched = negative_check(resp, test['negativematch'])
+                if matched and opts.verbose:
+                    print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
+                        % (test['account'], test['name'])
+            # advance debug output
+            if resp and opts.debug == 'advanced':
+                debug_save_response(test, resp, r_info, req)
+            return
+
+        # POST method worker
+        elif test['method'] == 'POST':
+            test, resp, r_info, req = post_request(test)
+
+            # set retry counter to 0
+            retry = 0
+
+            # success match
+            if resp and test['successmatch']:
+                matched = success_check(resp, test['successmatch'])
+                if matched:
+                    print " [" + color['green'] + "X" + color['end'] + "] Account %s exists on %s" \
+                        % (test['account'], test['name'])
+                    success.append(test)
+                    if opts.debug:
+                        print # spacing forverbose output
+                    if opts.outputfile:
+                        # log to outputfile
+                        opts.outputfile.write("Account " + test['account'] + " exists on " \
+                            + test['name'] +"\n")
+
+            # error match
+            if resp and test['errormatch']:
+                error = error_check(resp, test['errormatch'])
+                if error and retry >= opts.retries:
+                    print " [" + color['red'] + "!" + color['end'] + \
+                        "] %s Retries exceeded when testing account %s on %s" \
+                        % (threadname, test['account'], test['name'])
+                elif error:
+                    print " [" + color['yellow'] + "!" + color['end'] + \
+                        "] %s Error detected when testing account %s on %s" \
+                        % (threadname, test['account'], test['name'])
+                    # wait X seconds and retry
+                    if wait_time:
+                        # double existing wait_time
+                        wait_time = wait_time * 2
+                    else:
+                        # set starting point for wait_time
+                        wait_time = opts.retrytime
+                    if opts.verbose:
+                        print " [ ] %s Waiting %d seconds before retry" \
+                            % (threadname, wait_time)
+                    time.sleep(wait_time)
+                    # increment retry counter
+                    retry = retry + 1
+                    if opts.verbose:
+                        print " [ ] %s Attempting retry (%d of %d)" \
+                            % (threadname, retry, opts.retries)
+                    make_request(test, retry, wait_time)
+
+            # negative match
+            if resp and test['negativematch']:
+                matched = negative_check(resp, test['negativematch'])
+                if matched and opts.verbose:
+                    print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
+                        % (test['account'], test['name'])
+            if resp and opts.debug == 'advanced':
+                debug_save_response(test, resp, r_info, req)
+            return
+
+        else:
+            print " [" + color['red'] + "!" + color['end'] + "] Unknown Method %s : %s" \
+                % test['method'], test['url']
+            return
 
 def get_request(test):
     # perform GET request
@@ -763,6 +855,22 @@ def request_value(test):
 
     return cookie_val, csrf_val
 
+def error_check(data, errormatch):
+    # checks response data against errormatch regex
+
+    try:
+        regex = re.compile(errormatch)
+        if regex.search(data):
+            return True
+        else:
+            return False
+    except:
+        print " [" + color['red'] + "!" + color['end'] \
+            + "] Invalid in error check. Please check parameter"
+        if opts.debug:
+            print "\n\t[" + color['red'] + "!" + color['end'] + "] ",
+            traceback.print_exc()
+
 def success_check(data, successmatch):
     # checks response data against successmatch regex
 
@@ -845,7 +953,7 @@ def signal_handler(signal, frame):
 
     # globally signal threads to end
     global sigint
-    sigint = True
+    sigint = True # turn on SIGINT
 
     print
     if not len(success) == 0:
@@ -890,9 +998,7 @@ def query_user(question, default='no'):
                 + "] Please respond with 'yes' or 'no'\n"
 
 def setup():
-    # setup command line options and handle ctrl+c events
-
-    signal.signal(signal.SIGINT, signal_handler)
+    # setup command line options
 
     global opts
     parser = OptionParser(version="%prog version ::: " + __version__, epilog="\n")
@@ -966,6 +1072,21 @@ def setup():
         type="float",
         metavar="SECS"
         )
+    group.add_option(
+        "--retrytime",
+        dest="retrytime",
+        default="30",
+        help="Wait and retry on errormatch (seconds)",
+        type="int",
+        metavar="SECS"
+        )
+    group.add_option(
+        "--retries",
+        dest="retries",
+        default="0",
+        help="Number of retries, doubling wait time each retry",
+        type="int"
+        )
     parser.add_option_group(group)
 
     # output options grouping
@@ -1005,6 +1126,13 @@ def setup():
     (opts, args) = parser.parse_args()
 
     # the following section reworks options as required
+
+    # set retries to 1 if retrytime  set and not set already
+    if not opts.retrytime == 30 and \
+        opts.retries == 0:
+        # user set retrytime but forgot to set retries to 1
+        opts.retries = 1
+
 
     # split multiple account names into flat list
     if opts.account:
@@ -1192,6 +1320,9 @@ def display_options():
     if opts.threads:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Threads :::".ljust(30), \
             str(opts.threads) + " threads".ljust(40)
+    if opts.retries:
+        print "\t[" + color['yellow'] + "-" + color['end'] +"] Retries (delay) :::".ljust(30), \
+            str(opts.retries) + " (" + str(opts.retrytime) + " secs)".ljust(40)
     print " ------------------------------------------------------------------------------\n"
 
 class NullHTTPErrorProcessor(urllib2.HTTPErrorProcessor):
@@ -1223,4 +1354,5 @@ def main():
         sys.exit("\n\t[" + color['red'] + "!" + color['end'] \
             + "] No matches found. Exiting!")
 
+signal.signal(signal.SIGINT, signal_handler)
 main()
