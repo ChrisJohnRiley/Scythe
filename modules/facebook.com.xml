@@ -10,8 +10,9 @@
         <requestCSRF>false</requestCSRF>
         <successmatch>The password you entered is incorrect</successmatch>
         <negativematch>not (belong to|associated with)</negativematch>
-        <date>13/09/2012</date>
-        <version>2</version>
+        <errormatch>Security Check</errormatch>
+        <date>19/09/2012</date>
+        <version>3</version>
         <author>CJR</author>
         <category>social</category>
     </site>
