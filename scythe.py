@@ -52,10 +52,10 @@ from array import *
 from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
-__license__ = 'GPL'
-__version__ = '0.2.2'
+__license__ = 'BSD (3-Clause)'
+__version__ = '0.2.3'
 __codename__ = 'Lazy Lizard'
-__date__ = '18 September 2012'
+__date__ = '19 September 2012'
 __maintainer__ = 'ChrisJohnRiley'
 __email__ = 'contact@c22.cc'
 __status__ = 'Beta'
