@@ -53,3 +53,7 @@ Example Usage:
 > Check account list against facebook (output to logfile)
 
     ./scythe.py --single facebook.com --accountfile=accountfile.txt --output=logfile.txt
+    
+> Check accounts in the command line against Wordpress.com (3 retries, 60 second retry wait)
+
+    ./scythe.py --single facebook.com --account=testuser,testuser1,testuser2 --retries=3 --retrytime=60
