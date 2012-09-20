@@ -919,10 +919,10 @@ def debug_save_response(test, resp, r_info, req):
         os.makedirs('./debug/')
 
     # filename for html and headers, strip unusable chars from filenames
-    htmlfile = './debug/' + testname + str(time) + '.html'
-    htmlfile = re.sub(r'[^\w]', '_', htmlfile) # strip unsuitable chars
-    hdrfile = './debug/' + testname + str(time) + '.headers'
-    hdrfile = re.sub(r'[^\w]', '_', hdrfile) # strip unsuitable chars
+    htmlfile = testname + str(time) + '.html'
+    htmlfile = './debug/' + re.sub(r'[^\w]', '_', htmlfile) # strip unsuitable chars
+    hdrfile = testname + str(time) + '.headers'
+    hdrfile = './debug/' + re.sub(r'[^\w]', '_', hdrfile) # strip unsuitable chars
 
     # format headers
     header_output = []
