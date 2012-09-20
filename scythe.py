@@ -1007,12 +1007,12 @@ def setup():
     parser = OptionParser(version="%prog version ::: " + __version__, epilog="\n")
 
     # account options grouping
-    group = OptionGroup(parser, "::: Account Options ::")
+    group = OptionGroup(parser, "Account Options ")
     group.add_option(
         "-a", "--accountfile",
         dest="accountfile",
         default="./accountfile.txt",
-        help="Location of the accounts FILE (1 account per line)",
+        help="Location of the accounts FILE (1 per line)",
         metavar="FILE"
         )
     group.add_option(
@@ -1026,7 +1026,7 @@ def setup():
     parser.add_option_group(group)
 
     # module options grouping
-    group = OptionGroup(parser, "::: Module Options ::")
+    group = OptionGroup(parser, "Module Options ")
     group.add_option(
         "-l", "--list",
         action="store_true",
@@ -1058,7 +1058,7 @@ def setup():
     parser.add_option_group(group)
 
     # timing options grouping
-    group = OptionGroup(parser, "::: Timing Options ::")
+    group = OptionGroup(parser, "Timing Options ")
     group.add_option(
         "-t", "--threads",
         dest="threads",
@@ -1093,7 +1093,7 @@ def setup():
     parser.add_option_group(group)
 
     # output options grouping
-    group = OptionGroup(parser, "::: Output Options ::")
+    group = OptionGroup(parser, "Output Options ")
     group.add_option(
         "--summary",
         action="store_true",
