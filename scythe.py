@@ -444,8 +444,13 @@ def create_testcases():
             tempcase['errormatch'] = m['errormatch']
             testcases.append(tempcase)
             tempcase = {}
-
-    return testcases
+    if testcases:
+        return testcases
+    else:
+        print " [" + color['red'] + "!" + color['end'] + \
+            "]  No testcases created, check your accounts and module settings"
+        print
+        sys.exit(0)
 
 def request_handler(testcases):
     # handle requests present in testcases
