@@ -909,9 +909,6 @@ def negative_check(data, negativematch):
 def debug_save_response(test, resp, r_info, req):
     # save advanced deug responses to ./debug/
 
-    print " ------------------------------------------------------------------------------"
-    print " [" + color['red'] + "!" + color['end'] + "] Debug response from %s" % test['url']
-
     # get time to attach to filename
     time = int(datetime.datetime.now().strftime("%s")) * 1000
     # set testname, remove spaces
@@ -950,8 +947,7 @@ def debug_save_response(test, resp, r_info, req):
     f_headers.write("\n".join(header_output))
     f_headers.close()
 
-    print " [" + color['red'] + "!" + color['end'] + "]  Saved debug output to %s" % htmlfile
-    print " ------------------------------------------------------------------------------\n"
+    print " [" + color['yellow'] + ">" + color['end'] + "] Saved debug output to %s" % htmlfile
 
 def signal_handler(signal, frame):
     # handle CTRL + C events
@@ -1311,13 +1307,13 @@ def display_options():
     # display debug level
     if opts.debugoutput:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
-            "advanced debugging".ljust(40)
+            "Debug output to ./debug/".ljust(40)
     elif opts.debug:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
-            "debug".ljust(40)
+            "Very Verbose".ljust(40)
     else:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
-            "verbose".ljust(40)
+            "Verbose".ljust(40)
 
     if opts.outputfile:
         # get filename based on current path
