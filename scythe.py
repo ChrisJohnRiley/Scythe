@@ -608,7 +608,7 @@ def make_request(test, retry=0, wait_time=False):
                     % (test['account'], test['name'])
 
         # advance debug output
-        if resp and opts.debug == 'advanced':
+        if resp and opts.debugoutput:
             debug_save_response(test, resp, r_info, req)
 
         return
@@ -667,7 +667,7 @@ def make_request(test, retry=0, wait_time=False):
                 print " [" + color['red'] + "X" + color['end'] + "] Negative matched %s on %s" \
                     % (test['account'], test['name'])
 
-        if resp and opts.debug == 'advanced':
+        if resp and opts.debugoutput:
             debug_save_response(test, resp, r_info, req)
 
         return
@@ -921,9 +921,11 @@ def debug_save_response(test, resp, r_info, req):
     if not os.path.exists('./debug/'):
         os.makedirs('./debug/')
 
-    # filename for html and headers
+    # filename for html and headers, strip unusable chars from filenames
     htmlfile = './debug/' + testname + str(time) + '.html'
+    htmlfile = re.sub(r'[^\w]', '_', htmlfile) # strip unsuitable chars
     hdrfile = './debug/' + testname + str(time) + '.headers'
+    hdrfile = re.sub(r'[^\w]', '_', hdrfile) # strip unsuitable chars
 
     # format headers
     header_output = []
@@ -1116,7 +1118,14 @@ def setup():
         "-v", "--verbose",
         action="count",
         dest="verbose",
-        help="Print verbose messages to stdout (-v -v for debug)"
+        help="Print verbose messages to stdout (-vv for very verbose)"
+        )
+    group.add_option(
+        "-d", "--debug",
+        action="store_true",
+        dest="debugoutput",
+        default=False,
+        help="Store response and headers in ./debug/"
         )
     group.add_option(
         "-?",
@@ -1171,8 +1180,9 @@ def setup():
         opts.debug = True
     elif opts.verbose == 3:
         opts.verbose = True
-        # enabled advanced debugging - not recommended
-        opts.debug = 'advanced'
+        opts.debug = True
+        # enabled saving of header and response data to ./debug/
+        opts.debugoutput = True
     else:
         opts.verbose = True
         opts.debug = True
@@ -1299,7 +1309,7 @@ def display_options():
             str(opts.single).ljust(40)
 
     # display debug level
-    if opts.debug == 'advanced':
+    if opts.debugoutput:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
             "advanced debugging".ljust(40)
     elif opts.debug:
