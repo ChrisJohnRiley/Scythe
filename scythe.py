@@ -755,7 +755,7 @@ def get_request(test):
                 print textwrap.fill((" %s" \
                     % str(ex)), initial_indent='', subsequent_indent='\t', width=80)
             print
-        return test, False
+        return test, False, False, req
 
 def post_request(test):
     # perform POST request
@@ -813,7 +813,7 @@ def post_request(test):
                 print textwrap.fill((" %s" \
                     % str(ex)), initial_indent='', subsequent_indent='\t', width=80)
             print
-        return test, False
+        return test, False, False, req
 
 def request_value(test):
     # request a cookie or CSRF token from the target site for use during the logon attempt
