@@ -53,9 +53,9 @@ from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
 __license__ = 'BSD (3-Clause)'
-__version__ = '0.2.4'
+__version__ = '0.2.5'
 __codename__ = 'Lazy Lizard'
-__date__ = '20 September 2012'
+__date__ = '01 October 2012'
 __maintainer__ = 'ChrisJohnRiley'
 __email__ = 'contact@c22.cc'
 __status__ = 'Beta'
@@ -202,6 +202,17 @@ def extract_module_data(file, module_dom):
             except (IndexError, AttributeError):
                 xmlData['errormatch'] = ''
 
+            # set message if specified in the module XML
+            try:
+                # handle instances where people enter False insterad of leaving this field blank
+                if each.getElementsByTagName('message')[0].firstChild.nodeValue.lower() == 'false':
+                    xmlData['message'] = ''
+                else:
+                    xmlData['message'] = \
+                        each.getElementsByTagName('message')[0].firstChild.nodeValue
+            except (IndexError, AttributeError):
+                xmlData['message'] = ''
+
             # set module date
             try:
                 xmlData['date'] = each.getElementsByTagName('date')[0].firstChild.nodeValue
@@ -249,6 +260,15 @@ def extract_module_data(file, module_dom):
                         + "] Skipping module %s. Not in category (%s)" \
                         % (xmlData['name'], opts.category)
 
+            # print module message if present
+            if xmlData['message']:
+                print textwrap.fill(("\t[" + color['yellow'] + "!" + color['end'] \
+                        +"] "+ color['red'] + "Note" + color['end'] +" [%s]:" \
+                        % xmlData['name']),
+                        initial_indent='', subsequent_indent='\t -> ', width=80)
+                print textwrap.fill(("\t -> %s" % xmlData['message']),
+                        initial_indent='', subsequent_indent='\t -> ', width=80)
+
         except Exception, ex:
             print "\t[" + color['red'] + "!" + color['end'] \
                 + "] Failed to extracted module information\n\t\tError: %s" % ex
@@ -285,6 +305,8 @@ def output_modules():
             print textwrap.fill((" NEGATIVE MATCH: %s" % mod['negativematch']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" ERROR MATCH: %s" % mod['errormatch']),
+                initial_indent='', subsequent_indent=' -> ', width=80)
+            print textwrap.fill((" MODULE NOTE: %s" % mod['message']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
             print textwrap.fill((" DATE: %s" % mod['date']),
                 initial_indent='', subsequent_indent=' -> ', width=80)
@@ -1253,7 +1275,8 @@ def setup():
         user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
             +"] Test usernames in accountfile.txt against the selected module?", 'yes')
     # case: category set but accountfile left at default
-    elif opts.category and opts.accountfile == './accountfile.txt':
+    elif opts.category and opts.accountfile == './accountfile.txt' \
+        and not opts.listmodules:
         user_input = query_user("\t[" + color['yellow'] + "?" + color['end'] \
             +"] Test accounts in accountfile.txt against selected category?", 'yes')
 

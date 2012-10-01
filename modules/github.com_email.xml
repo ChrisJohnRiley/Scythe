@@ -1,7 +1,7 @@
 <!-- github.com - Email registration check
 
-Note: due to the way this module works, invlaid email addresses may
-appear as matches
+Note: due to the way github works, invlaid email addresses may
+appear as false positives.
 -->
 <module>
     <site>
@@ -17,6 +17,7 @@ appear as matches
         </requestCSRF>
         <successmatch>Email is invalid or already taken</successmatch>
         <negativematch></negativematch>
+        <message>Due to the way github works, invlaid email addresses may appear as false positives</message>
         <date>16/09/2012</date>
         <version>2</version>
         <author>CJR</author>

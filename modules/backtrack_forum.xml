@@ -1,4 +1,9 @@
-<!-- backtrack-linux.com Forum - Signup check username is free function -->
+<!-- 
+backtrack-linux.com Forum - Signup check username is free function
+
+note: email addresses result in the same error as an already assigned user
+this will cause flase positives if you use email addresses as account names
+-->
 <module>
     <site>
         <name>BackTrack Forum</name>
@@ -10,6 +15,7 @@
         <requestCSRF>false</requestCSRF>
         <successmatch>That username is already</successmatch>
         <negativematch>Username is valid</negativematch>
+        <message>Account names cannot be in the format of an email address. Email addresses will cause flase positives</message>
         <date>08/09/2012</date>
         <version>1</version>
         <author>Digininja</author>
