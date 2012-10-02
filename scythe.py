@@ -254,20 +254,23 @@ def extract_module_data(file, module_dom):
                         +"] Extracted module information from %s" \
                         % xmlData['name']
                     modules.append(xmlData)
+
+                # print module message if present
+                if xmlData['message']:
+                    print textwrap.fill(("\t[" + color['yellow'] + "!" + color['end'] \
+                            +"] "+ color['red'] + "Note" + color['end'] +" [%s]:" \
+                            % xmlData['name']),
+                            initial_indent='', subsequent_indent='\t -> ', width=80)
+                    print textwrap.fill(("\t -> %s" % xmlData['message']),
+                            initial_indent='', subsequent_indent='\t -> ', width=80)
+
             else:
                 if opts.debug:
                     print "\t[" + color['red'] + "!" + color['end'] \
                         + "] Skipping module %s. Not in category (%s)" \
                         % (xmlData['name'], opts.category)
 
-            # print module message if present
-            if xmlData['message']:
-                print textwrap.fill(("\t[" + color['yellow'] + "!" + color['end'] \
-                        +"] "+ color['red'] + "Note" + color['end'] +" [%s]:" \
-                        % xmlData['name']),
-                        initial_indent='', subsequent_indent='\t -> ', width=80)
-                print textwrap.fill(("\t -> %s" % xmlData['message']),
-                        initial_indent='', subsequent_indent='\t -> ', width=80)
+            
 
         except Exception, ex:
             print "\t[" + color['red'] + "!" + color['end'] \
@@ -1316,15 +1319,19 @@ def display_options():
     # print out the options being used
 
     print "\n ------------------------------------------------------------------------------"
+    # display accountfile if accounts not specified at commandline
     if not opts.account:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Account File :::".ljust(30), \
             str(opts.accountfile).ljust(40)
     else:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Account(s) :::".ljust(30), \
             ", ".join(opts.account).ljust(40)
+
+    # print module directory
     print "\t[" + color['yellow'] + "-" + color['end'] +"] Module Directory :::".ljust(30), \
         str(opts.moduledir).ljust(40)
 
+    # print categories if not single
     if not opts.single:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Categories :::".ljust(30), \
             ", ".join(opts.category).ljust(40)
@@ -1343,6 +1350,7 @@ def display_options():
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Verbose :::".ljust(30), \
             "Verbose".ljust(40)
 
+    # create outputfile and display filename
     if opts.outputfile:
         # get filename based on current path
         file = os.path.realpath(opts.outputfile).replace(os.getcwd(), "")
@@ -1351,6 +1359,8 @@ def display_options():
             file = file[1:]
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Output :::".ljust(30), \
             str(file).ljust(40)
+
+    # display wait, threads and retries if specified
     if opts.wait:
         print "\t[" + color['yellow'] + "-" + color['end'] +"] Throttling :::".ljust(30), \
             str(opts.wait) + " seconds".ljust(40)
@@ -1363,7 +1373,7 @@ def display_options():
     print " ------------------------------------------------------------------------------\n"
 
 class NullHTTPErrorProcessor(urllib2.HTTPErrorProcessor):
-    # return contents without handling errors
+    # return contents without throwing errors (not everything in life is a 200 OK)
     def http_response(self, request, response):
         return response
     def https_response(self, request, response):
