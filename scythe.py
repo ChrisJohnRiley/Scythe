@@ -41,7 +41,6 @@ import string
 import textwrap
 import sys
 import traceback
-import datetime
 import time
 import Queue
 from Cookie import BaseCookie
@@ -53,9 +52,9 @@ from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
 __license__ = 'BSD (3-Clause)'
-__version__ = '0.2.5'
+__version__ = '0.2.6'
 __codename__ = 'Lazy Lizard'
-__date__ = '01 October 2012'
+__date__ = '08 October 2012'
 __maintainer__ = 'ChrisJohnRiley'
 __email__ = 'contact@c22.cc'
 __status__ = 'Beta'
@@ -940,18 +939,19 @@ def debug_save_response(test, resp, r_info, req):
     # save advanced deug responses to ./debug/
 
     # get time to attach to filename
-    time = int(datetime.datetime.now().strftime("%s")) * 1000
+    timenow = int(time.time())
     # set testname, remove spaces
-    testname = test['name'].replace(" ", "_")
+    testname = test['name'].replace(" ", "_") + "_"
 
     # check debug directory exists, if not create it
     if not os.path.exists('./debug/'):
         os.makedirs('./debug/')
 
     # filename for html and headers, strip unusable chars from filenames
-    htmlfile = testname + str(time) + '.html'
+    corefile = testname + str(timenow)
+    htmlfile = testname + str(timenow) + '.html'
     htmlfile = './debug/' + re.sub(r'[^\w]', '_', htmlfile) # strip unsuitable chars
-    hdrfile = testname + str(time) + '.headers'
+    hdrfile = testname + str(timenow) + '.headers'
     hdrfile = './debug/' + re.sub(r'[^\w]', '_', hdrfile) # strip unsuitable chars
 
     # format headers
@@ -977,7 +977,7 @@ def debug_save_response(test, resp, r_info, req):
     f_headers.write("\n".join(header_output))
     f_headers.close()
 
-    print " [" + color['yellow'] + ">" + color['end'] + "] Saved debug output to %s" % htmlfile
+    print " [" + color['yellow'] + ">" + color['end'] + "] Saved debug output to %s[html|header]" % corefile
 
 def signal_handler(signal, frame):
     # handle CTRL + C events
