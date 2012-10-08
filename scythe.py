@@ -389,7 +389,7 @@ def load_modules():
         for d in dirs:
            if d.startswith("."): # ignore hidden . dirctories
                dirs.remove(d)
-        print " [" + color['yellow'] + "-" + color['end'] \
+        print "\n [" + color['yellow'] + "-" + color['end'] \
             +"] Starting to load modules from %s\n" % path
         for file in files:
             if not path.endswith('/'):
