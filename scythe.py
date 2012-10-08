@@ -52,7 +52,7 @@ from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
 __license__ = 'BSD (3-Clause)'
-__version__ = '0.2.6'
+__version__ = '0.2.7'
 __codename__ = 'Lazy Lizard'
 __date__ = '08 October 2012'
 __maintainer__ = 'ChrisJohnRiley'
@@ -259,12 +259,12 @@ def extract_module_data(file, module_dom):
                     print textwrap.fill(("\t[" + color['yellow'] + "!" + color['end'] \
                             +"] "+ color['red'] + "Note" + color['end'] +" [%s]:" \
                             % xmlData['name']),
-                            initial_indent='', subsequent_indent='\t -> ', width=80)
+                            initial_indent='', subsequent_indent='\t -> ', width=100)
                     print textwrap.fill(("\t -> %s" % xmlData['message']),
                             initial_indent='', subsequent_indent='\t -> ', width=80)
 
             else:
-                if opts.debug:
+                if opts.debug and not opts.category == "single":
                     print "\t[" + color['red'] + "!" + color['end'] \
                         + "] Skipping module %s. Not in category (%s)" \
                         % (xmlData['name'], opts.category)
@@ -421,7 +421,8 @@ def load_accounts():
                 % ", ".join(opts.account)
         for a in opts.account:
             # add all command line accounts to array for testcases
-            accounts.append(a)
+                if a: # ignore empty fields
+                    accounts.append(a)
 
     else:
     # load accounts from file if it exists
@@ -575,10 +576,10 @@ def make_request(test, retry=0, wait_time=False):
 
     # set threadname
     if not current_thread().name == 'MainThread':
-        threadname = "[" + current_thread().name +"]"
+        threadname = "[" + current_thread().name +"] >"
     else:
         # return blank string when not using threading
-        threadname = ''
+        threadname = '>'
 
     # GET method worker
     if test['method'] == 'GET':
@@ -746,6 +747,12 @@ def get_request(test):
         r_info = f.info()
         f.close()
 
+        # handle instances where the response body is 0 bytes in length
+        if not r_body:
+            print " [" + color['red'] + "!" + color['end'] + "] Zero byte response received from %s" \
+                % test['name']
+            r_body = "<Scythe Message: Empty response from server>"
+
         # returned updated test and response data
         return test, r_body, r_info, req
 
@@ -803,6 +810,12 @@ def post_request(test):
         r_body = f.read()
         r_info = f.info()
         f.close()
+
+        # handle instances where the response body is 0 bytes in length
+        if not r_body:
+            print " [" + color['red'] + "!" + color['end'] + "] Zero byte response received from %s" \
+                % test['name']
+            r_body = "<Scythe Message: Empty response from server>"
 
         # returned updated test and response data
         return test, r_body, r_info, req
@@ -1114,7 +1127,7 @@ def setup():
     group.add_option(
         "--retries",
         dest="retries",
-        default="0",
+        default="1",
         help="Number of retries, doubling wait time each retry",
         type="int"
         )
@@ -1168,9 +1181,8 @@ def setup():
     # set retries to 1 if retrytime  set and not set already
     if not opts.retrytime == 30 and \
         opts.retries == 0:
-        # user set retrytime but forgot to set retries to 1
+        # user set retrytime but forgot to set retries to at least 1
         opts.retries = 1
-
 
     # split multiple account names into flat list
     if opts.account:
@@ -1178,6 +1190,8 @@ def setup():
         for a in opts.account:
              acc_split.append(a.split(','))
         opts.account = sum(acc_split, [])
+        # remove blanks and invalid entries from accounts
+        opts.account = filter(None, opts.account)
 
     # split multiple categories into flat list
     if opts.category:
