@@ -1,16 +1,16 @@
-<!-- blogspot.com - Looks for USER.blogspot.com -->
+<!-- linkedin.com - Looks for www.linkedin.com/in/USER -->
 
 <module>
     <site>
-        <name>blogspot.com (Username)</name>
-        <url><![CDATA[http://<ACCOUNT>.blogspot.com]]></url>
+        <name>linkedin.com (Username)</name>
+        <url><![CDATA[http://www.linkedin.com/in/<ACCOUNT>]]></url>
         <method>GET</method>
         <postParameters></postParameters>
         <headers>Accept-Language: en-gb</headers>
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
-        <successmatch>Powered by</successmatch>
-        <negativematch>Blog not found</negativematch>
+        <successmatch>Overview</successmatch>
+        <negativematch>Profile Not Found</negativematch>
         <date>10/12/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>

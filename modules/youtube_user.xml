@@ -1,16 +1,17 @@
-<!-- blogspot.com - Looks for USER.blogspot.com -->
+<!-- youtube.com - Looks for www.youtube.com/USER -->
 
 <module>
     <site>
-        <name>blogspot.com (Username)</name>
-        <url><![CDATA[http://<ACCOUNT>.blogspot.com]]></url>
+        <name>youtube.com (Username)</name>
+        <url><![CDATA[http://www.youtube.com/<ACCOUNT>]]></url>
         <method>GET</method>
         <postParameters></postParameters>
         <headers>Accept-Language: en-gb</headers>
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
-        <successmatch>Powered by</successmatch>
-        <negativematch>Blog not found</negativematch>
+        <successmatch>Featured</successmatch>
+        <negativematch>This channel was closed and is no longer available</negativematch>
+		<negativematch>the page you requested cannot be found</negativematch>
         <date>10/12/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>
