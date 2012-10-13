@@ -1,9 +1,5 @@
 ImageShack
 Digg
-Posterous			http://jeff.posterous.com/
-hi5					http://jeff.hi5.com
-Bit.ly				http://bit.ly/u/jeff
-blip.tv				http://jeff.blip.tv/
 Car Domain			http://www.cardomain.com/id/jeff
 Multiply			http://jeff.multiply.com/
 Xanga				http://jeff.xanga.com/
@@ -23,7 +19,6 @@ iLike
 Slashdot			http://slashdot.org/~jeff
 About.me			http://about.me/jeff
 eSnips				http://www.esnips.com/user/jeff
-ResumeBucket		http://www.resumebucket.com/jeff
 Redux				http://www.redux.com/jeff
 XFire				http://www.xfire.com/profile/jeff/
 Howcast
@@ -36,10 +31,7 @@ diigo				http://www.diigo.com/profile/jeff
 Rate Your Music		http://rateyourmusic.com/~jeff
 blogTV				http://www.blogtv.com/people/jeff
 vi.sualize.us		http://vi.sualize.us/jeff/
-ColourLovers		http://www.colourlovers.com/lover/jeff
 Skyrock				http://jeff.skyrock.com/
-Families.com		http://www.families.com/jeff
-Tripit				http://www.tripit.com/people/jeff
 blekko				http://blekko.com/user/jeff
 gowalla
 PictureTrail		http://picturetrail.com/jeff
@@ -66,7 +58,6 @@ Plancast			http://plancast.com/jeff
 Seesmic				
 identica			http://identi.ca/jeff
 Food Spotting		http://www.foodspotting.com/jeff
-Wefollow			http://wefollow.com/jeff
 BizNik
 Sphinn				http://sphinn.com/user/jeff
 Picasa				
@@ -82,7 +73,6 @@ Bambuser			http://bambuser.com/channel/jeff
 Jaiku				
 aNobii				http://www.anobii.com/jeff/books
 blippy				
-Zooomr				http://www.zooomr.com/photos/jeff/
 Brizzly				
 Forrst				http://forrst.me/jeff
 ryze				http://www.ryze.com/go/jeff
@@ -97,7 +87,6 @@ SocialShake
 politics4all.com	http://politics4all.com/users/jeff
 connect.me			http://connect.me/jeff
 iliketotallyloveit	http://www.iliketotallyloveit.com/people/jeff/
-My Name Is			http://www.mynameise.com/jeff
 EightBit.Me			http://eightbit.me/jeff
 fwisp				http://fwisp.com/user/profile/jeff
 SlideSix			
