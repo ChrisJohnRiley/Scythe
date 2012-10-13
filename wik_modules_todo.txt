@@ -1,20 +1,5 @@
 ImageShack
 Digg
-funnyordie 			http://www.funnyordie.com/jeff
-UStream 			http://www.ustream.tv/user/jeff
-Kongregate 			http://www.kongregate.com/accounts/jeff
-Buzznet 			http://jeff.buzznet.com/user/
-SoundCloud 			http://soundcloud.com/jeff
-Gather 				http://adam.gather.com/
-Kaboodle			http://www.kaboodle.com/jeff
-Mahalo				http://www.mahalo.com/member/jeff
-reddit				http://www.reddit.com/user/jeff/
-Justin.tv			http://www.justin.tv/jeff
-delicious			http://delicious.com/jeff
-newsvine			http://jeff.newsvine.com/
-slideshare			http://www.slideshare.net/jeff
-foursquare			http://foursquare.com/jeff
-Badoo				http://badoo.com/jeff/
 Posterous			http://jeff.posterous.com/
 hi5					http://jeff.hi5.com
 Bit.ly				http://bit.ly/u/jeff
