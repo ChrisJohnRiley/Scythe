@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>Subscribe to</successmatch>
-		<negativematch>This Page was Not Found</negativematch>
+        <negativematch>This Page was Not Found</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>WiK</author>

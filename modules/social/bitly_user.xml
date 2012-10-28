@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>BITMARKS</successmatch>
-		<negativematch>Uh oh, bitly couldn't find a link for the bitly URL you clicked.</negativematch>
+        <negativematch>Uh oh, bitly couldn't find a link for the bitly URL you clicked.</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>WiK</author>

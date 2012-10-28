@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>MEMBER SINCE</successmatch>
-		<negativematch>Sorry, no account with that name was found.</negativematch>
+        <negativematch>Sorry, no account with that name was found.</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>

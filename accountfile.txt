@@ -1,4 +1,5 @@
 # one account per line
+reg@c22.cc
 exampleuser
 testuser
 test

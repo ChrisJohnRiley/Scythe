@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>Add as Friend</successmatch>
-		<negativematch>This profile is inaccessible, or the user has cancelled their account.</negativematch>
+        <negativematch>This profile is inaccessible, or the user has cancelled their account.</negativematch>
         <date>10/12/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>

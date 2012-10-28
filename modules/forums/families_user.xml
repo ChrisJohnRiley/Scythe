@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>Recent Photos</successmatch>
-		<negativematch>Page not found</negativematch>
+        <negativematch>Page not found</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>WiK</author>

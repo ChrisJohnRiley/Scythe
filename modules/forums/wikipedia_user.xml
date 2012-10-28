@@ -10,8 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>This page was last modified</successmatch>
-        <negativematch>Wikipedia does not have a user page with this exact name.</negativematch>
-		<negativematch>is not registered</negativematch>
+        <negativematch>is not registered</negativematch>
         <date>10/12/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>

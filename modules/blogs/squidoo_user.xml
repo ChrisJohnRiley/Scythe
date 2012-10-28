@@ -11,7 +11,7 @@
         <requestCSRF>False</requestCSRF>
         <successmatch>We're looking forward to something great happening soon</successmatch>
         <successmatch>Joined:</successmatch>
-		<negativematch>I'm sorry, but we couldn't find that!</negativematch>
+        <negativematch>I'm sorry, but we couldn't find that!</negativematch>
         <date>10/12/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>

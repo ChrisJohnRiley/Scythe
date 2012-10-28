@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>MEMBER</successmatch>
-		<negativematch>We're sorry but we can't find that webpage.</negativematch>
+        <negativematch>We're sorry but we can't find that webpage.</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>

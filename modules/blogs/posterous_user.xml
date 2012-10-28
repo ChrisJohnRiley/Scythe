@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>ARCHIVE</successmatch>
-		<negativematch>Oh no! We couldn't find your page.</negativematch>
+        <negativematch>Oh no! We couldn't find your page.</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>WiK</author>

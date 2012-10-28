@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>Sounds from</successmatch>
-		<negativematch>Oops, looks like we can't find that page!</negativematch>
+        <negativematch>Oops, looks like we can't find that page!</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>WiK</author>

@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>'s channel</successmatch>
-		<negativematch>Sorry, we couldn't find that stream.</negativematch>
+        <negativematch>Sorry, we couldn't find that stream.</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>WiK</author>

@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>Epinions.com ID:</successmatch>
-		<negativematch>Sorry, the page you requested was not found.</negativematch>
+        <negativematch>Sorry, the page you requested was not found.</negativematch>
         <date>10/12/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>

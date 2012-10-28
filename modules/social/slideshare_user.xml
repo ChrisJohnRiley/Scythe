@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>Followers</successmatch>
-		<negativematch>is still available. Why not</negativematch>
+        <negativematch>is still available. Why not</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>WiK</author>

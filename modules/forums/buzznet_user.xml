@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>Notes to</successmatch>
-		<negativematch>the page you requested was not found.</negativematch>
+        <negativematch>the page you requested was not found.</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>

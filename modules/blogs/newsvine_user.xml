@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>Member Since:</successmatch>
-		<negativematch>Oh my. There doesn't seem to be a page here anymore.</negativematch>
+        <negativematch>Oh my. There doesn't seem to be a page here anymore.</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>WiK</author>

@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>Joined:</successmatch>
-		<negativematch>An error occured</negativematch>
+        <negativematch>An error occured</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>Jaime Filson aka WiK</author>

@@ -10,7 +10,7 @@
         <requestCookie>False</requestCookie>
         <requestCSRF>False</requestCSRF>
         <successmatch>You are not connected to</successmatch>
-		<negativematch>The group or member URL you're trying to view does not exist.</negativematch>
+        <negativematch>The group or member URL you're trying to view does not exist.</negativematch>
         <date>10/13/2012</date>
         <version>1</version>
         <author>WiK</author>
