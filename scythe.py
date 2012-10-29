@@ -389,8 +389,8 @@ def load_modules():
         for d in dirs:
            if d.startswith("."): # ignore hidden . dirctories
                dirs.remove(d)
-        print "\n [" + color['yellow'] + "-" + color['end'] \
-            +"] Starting to load modules from %s\n" % path
+        print " [" + color['yellow'] + "-" + color['end'] \
+            +"] Starting to load modules from %s" % path
         for file in files:
             if not path.endswith('/'):
                 path = path + '/'
@@ -398,9 +398,13 @@ def load_modules():
             if file.endswith('.xml') and not file.startswith('.'):
                 if opts.verbose:
                     print "\t[ ] Checking module : %s" % file
-                module_dom = parse(path + file)
-                module_dom = module_dom.getElementsByTagName('site')
-                extract_module_data(file, module_dom)
+                try:
+                    module_dom = parse(path + file)
+                    module_dom = module_dom.getElementsByTagName('site')
+                    extract_module_data(file, module_dom)
+                except:
+                    print "\t[" + color['red'] + "!" + color['end'] \
+                        +"] Error parsing %s module, check XML" % file
             elif opts.debug:
                 print "\t[" + color['red'] + "!" + color['end'] \
                     + "] Skipping non-XML file : %s" % file
@@ -473,7 +477,7 @@ def create_testcases():
         return testcases
     else:
         print " [" + color['red'] + "!" + color['end'] + \
-            "]  No testcases created, check your accounts and module settings"
+            "] No testcases created, check your accounts and module settings"
         print
         sys.exit(0)
 
