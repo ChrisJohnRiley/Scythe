@@ -43,6 +43,7 @@ import sys
 import traceback
 import time
 import Queue
+import random
 from Cookie import BaseCookie
 from threading import Thread, activeCount, Lock, current_thread
 from random import Random
@@ -52,9 +53,9 @@ from xml.dom.minidom import parse
 
 __author__ = 'Chris John Riley'
 __license__ = 'BSD (3-Clause)'
-__version__ = '0.2.8'
+__version__ = '0.2.81'
 __codename__ = 'Lazy Lizard'
-__date__ = '28 October 2012'
+__date__ = '24 May 2013'
 __maintainer__ = 'ChrisJohnRiley'
 __email__ = 'contact@c22.cc'
 __status__ = 'Beta'
@@ -269,7 +270,7 @@ def extract_module_data(file, module_dom):
                         + "] Skipping module %s. Not in category (%s)" \
                         % (xmlData['name'], opts.category)
 
-            
+
 
         except Exception, ex:
             print "\t[" + color['red'] + "!" + color['end'] \
@@ -958,7 +959,7 @@ def debug_save_response(test, resp, r_info, req):
     # get time to attach to filename
     timenow = int(time.time())
     # set testname, remove spaces
-    testname = test['name'].replace(" ", "_") + "_"
+    testname = re.sub(r'[^\w]', '_', test['name']) + "_"
 
     # check debug directory exists, if not create it
     if not os.path.exists('./debug/'):
@@ -966,10 +967,10 @@ def debug_save_response(test, resp, r_info, req):
 
     # filename for html and headers, strip unusable chars from filenames
     corefile = testname + str(timenow)
-    htmlfile = testname + str(timenow) + '.html'
-    htmlfile = './debug/' + re.sub(r'[^\w]', '_', htmlfile) # strip unsuitable chars
-    hdrfile = testname + str(timenow) + '.headers'
-    hdrfile = './debug/' + re.sub(r'[^\w]', '_', hdrfile) # strip unsuitable chars
+    htmlfile = testname + str(timenow)
+    htmlfile = './debug/' + re.sub(r'[^\w]', '_', htmlfile) + '.html' # strip unsuitable chars
+    hdrfile = testname + str(timenow)
+    hdrfile = './debug/' + re.sub(r'[^\w]', '_', hdrfile) + '.headers' # strip unsuitable chars
 
     # format headers
     header_output = []
@@ -981,6 +982,12 @@ def debug_save_response(test, resp, r_info, req):
     for each in r_info.headers:
         header_output.append(each.rstrip())
     header_output.append('\n')
+
+    # check if file exists, if so add random number to filename
+    if os.path.isfile(htmlfile):
+	rand_addition = str(random.randint(0000, 9999)).zfill(4)
+	htmlfile = htmlfile[:-5] + '_' + rand_addition + '.html'
+	hdrfile = hdrfile[:-8] + '_' + rand_addition + '.headers'
 
     # open file for writing
     f_html = open(htmlfile, 'w')
@@ -994,7 +1001,7 @@ def debug_save_response(test, resp, r_info, req):
     f_headers.write("\n".join(header_output))
     f_headers.close()
 
-    print " [" + color['yellow'] + ">" + color['end'] + "] Saved debug output to %s[html|header]" % corefile
+    print " [" + color['yellow'] + ">" + color['end'] + "] Saved debug output to %s[.html|.header]" % htmlfile[:-5]
 
 def signal_handler(signal, frame):
     # handle CTRL + C events
