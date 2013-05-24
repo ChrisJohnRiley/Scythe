@@ -966,7 +966,6 @@ def debug_save_response(test, resp, r_info, req):
         os.makedirs('./debug/')
 
     # filename for html and headers, strip unusable chars from filenames
-    corefile = testname + str(timenow)
     htmlfile = testname + str(timenow)
     htmlfile = './debug/' + re.sub(r'[^\w]', '_', htmlfile) + '.html' # strip unsuitable chars
     hdrfile = testname + str(timenow)
@@ -985,9 +984,9 @@ def debug_save_response(test, resp, r_info, req):
 
     # check if file exists, if so add random number to filename
     if os.path.isfile(htmlfile):
-	rand_addition = str(random.randint(0000, 9999)).zfill(4)
-	htmlfile = htmlfile[:-5] + '_' + rand_addition + '.html'
-	hdrfile = hdrfile[:-8] + '_' + rand_addition + '.headers'
+        rand_addition = str(random.randint(0000, 9999)).zfill(4)
+        htmlfile = htmlfile[:-5] + '_' + rand_addition + '.html'
+        hdrfile = hdrfile[:-8] + '_' + rand_addition + '.headers'
 
     # open file for writing
     f_html = open(htmlfile, 'w')
